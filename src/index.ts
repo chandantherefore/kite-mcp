@@ -1578,7 +1578,6 @@ export class KiteMCPServer {
     async run() {
         const transport = new StdioServerTransport();
         await this.server.connect(transport);
-        console.error("Kite MCP Server running on stdio");
     }
 }
 
