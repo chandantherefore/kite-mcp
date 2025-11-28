@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "kite": {
+            "command": "node",
+            "args": [
+                "/absolute/path/to/kite-mcp/dist/index.js"
+            ]
+        }
+    }
+}
