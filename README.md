@@ -1,8 +1,42 @@
-# Kite MCP Server
+# Kite MCP Server + OneApp Portfolio Manager
 
-A Model Context Protocol (MCP) server for the [Zerodha Kite Connect](https://kite.trade) trading APIs. This server enables AI assistants to interact with Kite Connect to execute trades, manage portfolios, fetch market data, and more.
+This repository contains two integrated systems:
 
-**🚀 [Quick Start Guide](QUICKSTART.md)** | **📖 [Usage Examples](USAGE_EXAMPLES.md)** | **🔗 [Kite Connect Docs](https://kite.trade/docs/connect/v3/)**
+1. **Kite MCP Server**: A Model Context Protocol (MCP) server for [Zerodha Kite Connect](https://kite.trade) trading APIs
+2. **OneApp Portfolio Manager**: A multi-account portfolio management web application with XIRR tracking
+
+**🚀 [Quick Start - MCP](QUICKSTART.md)** | **📖 [MCP Usage Examples](USAGE_EXAMPLES.md)** | **🎯 [Portfolio App Guide](GETTING_STARTED.md)** | **📊 [Project Status](PROJECT_STATUS.md)**
+
+---
+
+## 🎉 NEW: OneApp Portfolio Manager
+
+A comprehensive portfolio management system for tracking multiple Zerodha accounts with historical data import and XIRR calculations.
+
+### Features
+- 📊 **Multi-Account Support**: Manage 3+ Zerodha accounts in one place
+- 📥 **CSV Import**: Upload Tradebook and Ledger data (5+ years)
+- 💰 **XIRR Tracking**: Calculate annualized returns at portfolio and stock level
+- 🔄 **Consolidated & Individual Views**: Toggle between all accounts or specific ones
+- 📈 **Holdings Analysis**: Detailed P&L and performance metrics per stock
+- 🎨 **Modern UI**: Clean, responsive interface with data privacy toggle
+
+### Quick Start (Portfolio App)
+```bash
+# Start DDEV environment
+ddev start
+
+# Access the application
+open https://oneapp.ddev.site
+```
+
+**For detailed setup instructions**: See [GETTING_STARTED.md](GETTING_STARTED.md)
+
+**Complete implementation details**: See [PROJECT_STATUS.md](PROJECT_STATUS.md)
+
+---
+
+## Kite MCP Server
 
 ## Features
 
