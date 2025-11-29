@@ -269,9 +269,12 @@ export default function Dashboard() {
 
               <div className="text-sm text-gray-600">
                 Showing live data from {liveAccounts.length} Zerodha account(s). 
-                <a href="/live/holdings" className="ml-2 text-blue-600 hover:underline">
+                <button 
+                  onClick={() => router.push('/live/holdings')}
+                  className="ml-2 text-blue-600 hover:underline"
+                >
                   View detailed holdings →
-                </a>
+                </button>
               </div>
             </>
           ) : (
