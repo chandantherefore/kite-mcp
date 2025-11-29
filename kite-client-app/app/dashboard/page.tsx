@@ -49,12 +49,12 @@ export default function Dashboard() {
   // Live Zerodha Data
   const { 
     consolidated: liveData,
-    fetchAllAccountsData,  
+      fetchAllAccountsData,  
     isLoading: liveLoading,
     availableAccounts: liveAccounts,
     accounts: accountsData,
-    isDataHidden,
-    toggleDataVisibility
+      isDataHidden,
+      toggleDataVisibility
   } = useKiteStore();
   
   const router = useRouter();
@@ -129,18 +129,18 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+          <header className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
               Portfolio Dashboard
-            </h1>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={toggleDataVisibility}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
-                title={isDataHidden ? "Show Data" : "Hide Data"}
-              >
+                  </h1>
+                  <div className="flex items-center gap-4">
+                      <button
+                          onClick={toggleDataVisibility}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
+                          title={isDataHidden ? "Show Data" : "Hide Data"}
+                      >
                 {isDataHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 <span>{isDataHidden ? 'Show' : 'Hide'}</span>
               </button>
@@ -154,11 +154,11 @@ export default function Dashboard() {
               >
                 <RefreshCw className={`h-4 w-4 ${(manualLoading || liveLoading) ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+                      </button>
+                      </div>
+                  </div>
+              </div>
+          </header>
 
       <main className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
         {/* Account Switcher for Manual Data */}
@@ -200,27 +200,27 @@ export default function Dashboard() {
             <>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
                 <div className="bg-white overflow-hidden shadow rounded-lg p-5 border-l-4 border-green-500">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-green-100 rounded-md p-3">
-                      <Wallet className="h-6 w-6 text-green-600" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Total Investment
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                          <div className="flex items-center">
+                              <div className="flex-shrink-0 bg-green-100 rounded-md p-3">
+                                  <Wallet className="h-6 w-6 text-green-600" />
+                              </div>
+                              <div className="ml-5 w-0 flex-1">
+                                      <dt className="text-sm font-medium text-gray-500 truncate">
+                                          Total Investment
+                                      </dt>
+                                      <dd className="text-lg font-medium text-gray-900">
                         {maskData(liveData.totalInvestment)}
-                      </dd>
-                    </div>
-                  </div>
-                </div>
+                                      </dd>
+                              </div>
+                          </div>
+                      </div>
 
                 <div className="bg-white overflow-hidden shadow rounded-lg p-5 border-l-4 border-blue-500">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-blue-100 rounded-md p-3">
-                      <PieChart className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
+                          <div className="flex items-center">
+                              <div className="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                                  <PieChart className="h-6 w-6 text-blue-600" />
+                              </div>
+                              <div className="ml-5 w-0 flex-1">
                       <dt className="text-sm font-medium text-gray-500 truncate">
                         Current Value
                       </dt>
@@ -278,14 +278,25 @@ export default function Dashboard() {
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <p className="text-gray-600 mb-4">No live trading data available</p>
               <p className="text-sm text-gray-500 mb-4">
-                Configure Zerodha Kite Connect API to see live holdings and positions
+                You need to authenticate with Zerodha Kite Connect to see live holdings and positions
               </p>
-              <button
-                onClick={() => router.push('/settings/accounts')}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Configure API Access
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => router.push('/kite-auth')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Authenticate Accounts
+                </button>
+                <button
+                  onClick={fetchLiveData}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Retry
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-4">
+                Make sure you've configured API credentials in .env.local
+              </p>
             </div>
           )}
         </div>
@@ -335,33 +346,33 @@ export default function Dashboard() {
                       <PieChart className="h-6 w-6 text-purple-600" />
                     </div>
                     <div className="ml-5 w-0 flex-1">
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Current Value
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                                      <dt className="text-sm font-medium text-gray-500 truncate">
+                                          Current Value
+                                      </dt>
+                                      <dd className="text-lg font-medium text-gray-900">
                         {maskData(manualStats.currentValue)}
-                      </dd>
-                    </div>
-                  </div>
-                </div>
+                                      </dd>
+                              </div>
+                          </div>
+                      </div>
 
                 <div className="bg-white overflow-hidden shadow rounded-lg p-5 border-l-4 border-orange-500">
-                  <div className="flex items-center">
+                          <div className="flex items-center">
                     <div className={`flex-shrink-0 rounded-md p-3 ${manualStats.totalPnl >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
                       <TrendingUp className={`h-6 w-6 ${manualStats.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Total P&L
-                      </dt>
+                              </div>
+                              <div className="ml-5 w-0 flex-1">
+                                      <dt className="text-sm font-medium text-gray-500 truncate">
+                                          Total P&L
+                                      </dt>
                       <dd className={`text-lg font-medium ${manualStats.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {maskData(manualStats.totalPnl)}
                         <span className="text-sm ml-2">
                           ({maskPercent(manualStats.totalPnlPercent)})
                         </span>
-                      </dd>
-                    </div>
-                  </div>
+                                      </dd>
+                              </div>
+                          </div>
                 </div>
 
                 <div className="bg-white overflow-hidden shadow rounded-lg p-5 border-l-4 border-indigo-500">
@@ -376,7 +387,7 @@ export default function Dashboard() {
                       <dd className="text-lg font-medium text-gray-900">
                         {manualStats.xirr !== null ? maskPercent(manualStats.xirr) : 'N/A'}
                       </dd>
-                    </div>
+                      </div>
                   </div>
                 </div>
               </div>
@@ -413,45 +424,45 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-        </div>
+                  </div>
 
-        {/* Quick Links */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <button 
+                  {/* Quick Links */}
+                  <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <button 
             onClick={() => router.push('/import')}
             className="block p-6 bg-white shadow rounded-lg hover:bg-gray-50 transition text-left"
-          >
+                      >
             <h3 className="text-lg font-medium text-gray-900">
               📥 Import Data
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
+                          </h3>
+                          <p className="mt-2 text-sm text-gray-500">
               Upload tradebook and ledger CSV files
-            </p>
-          </button>
-          <button 
+                          </p>
+                      </button>
+                      <button 
             onClick={() => router.push('/conflicts')}
             className="block p-6 bg-white shadow rounded-lg hover:bg-gray-50 transition text-left"
-          >
+                      >
             <h3 className="text-lg font-medium text-gray-900">
               ⚠️ Resolve Conflicts
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
+                          </h3>
+                          <p className="mt-2 text-sm text-gray-500">
               Review and resolve import conflicts
-            </p>
-          </button>
-          <button 
+                          </p>
+                      </button>
+                      <button 
             onClick={() => router.push('/tools')}
             className="block p-6 bg-white shadow rounded-lg hover:bg-gray-50 transition text-left"
-          >
+                      >
             <h3 className="text-lg font-medium text-gray-900">
               🔧 Portfolio Tools
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
+                          </h3>
+                          <p className="mt-2 text-sm text-gray-500">
               Apply stock splits and manage data
-            </p>
-          </button>
-        </div>
-      </main>
-    </div>
+                          </p>
+                      </button>
+              </div>
+          </main>
+      </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Upload, Settings, PieChart, AlertTriangle, Wrench, BookOpen } from 'lucide-react';
+import { Home, Upload, Settings, PieChart, AlertTriangle, Wrench, BookOpen, Key } from 'lucide-react';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -14,6 +14,7 @@ export default function Navigation() {
     { href: '/import', label: 'Import', icon: Upload },
     { href: '/conflicts', label: 'Conflicts', icon: AlertTriangle },
     { href: '/tools', label: 'Tools', icon: Wrench },
+    { href: '/kite-auth', label: 'Kite Auth', icon: Key },
     { href: '/settings/accounts', label: 'Accounts', icon: Settings },
   ];
 
