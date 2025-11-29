@@ -18,6 +18,8 @@ interface ManualHolding {
   currentValue: number;
   pnl: number;
   pnlPercent: number;
+  realizedPnL: number;
+  unrealizedPnL: number;
   xirr: number | null;
 }
 
@@ -405,7 +407,7 @@ export default function HoldingsPage() {
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                   <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
                     <h2 className="text-xl font-semibold text-gray-900">
-                      Stock Holdings with XIRR ({manualStats.holdings.length})
+                      Stock Holdings with XIRR ({manualStats.holdings.length} total, {manualStats.holdings.filter(h => h.quantity > 0).length} active)
                     </h2>
                   </div>
                   
@@ -414,48 +416,63 @@ export default function HoldingsPage() {
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Avg Price</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Current Price</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Investment</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Current Value</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">P&L</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Realized P&L</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unrealized P&L</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total P&L</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">XIRR</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {manualStats.holdings.map((holding) => (
-                          <tr key={holding.symbol} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {holding.symbol}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
-                              {holding.quantity.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
-                              ₹{holding.avgPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
-                              ₹{holding.currentPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
-                              ₹{holding.investment.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
-                              ₹{holding.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                            </td>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${holding.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              ₹{holding.pnl.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                              <br />
-                              <span className="text-xs">
-                                ({holding.pnlPercent.toFixed(2)}%)
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600 font-semibold">
-                              {holding.xirr !== null ? `${holding.xirr.toFixed(2)}%` : 'N/A'}
-                            </td>
-                          </tr>
-                        ))}
+                        {manualStats.holdings.map((holding) => {
+                          const isClosed = holding.quantity === 0;
+                          return (
+                            <tr key={holding.symbol} className={`hover:bg-gray-50 ${isClosed ? 'opacity-50 bg-gray-50' : ''}`}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {holding.symbol}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {isClosed ? (
+                                  <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded">
+                                    CLOSED
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                                    ACTIVE
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                                {holding.quantity.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                                ₹{holding.avgPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                                ₹{holding.investment.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                              </td>
+                              <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${holding.realizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                ₹{holding.realizedPnL.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                              </td>
+                              <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${holding.unrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                ₹{holding.unrealizedPnL.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                              </td>
+                              <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${holding.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                ₹{holding.pnl.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                <br />
+                                <span className="text-xs">
+                                  ({holding.pnlPercent.toFixed(2)}%)
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600 font-semibold">
+                                {holding.xirr !== null ? `${holding.xirr.toFixed(2)}%` : 'N/A'}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

@@ -227,6 +227,52 @@ export const db = {
     );
   },
 
+  async getTradeById(id: number): Promise<Trade | null> {
+    return queryOne<Trade>('SELECT * FROM trades WHERE id = ?', [id]);
+  },
+
+  async updateTrade(
+    id: number,
+    updates: {
+      symbol?: string;
+      quantity?: number;
+      price?: number;
+    }
+  ): Promise<void> {
+    const setClauses: string[] = [];
+    const params: any[] = [];
+
+    if (updates.symbol !== undefined) {
+      setClauses.push('symbol = ?');
+      params.push(updates.symbol);
+    }
+
+    if (updates.quantity !== undefined) {
+      setClauses.push('quantity = ?');
+      params.push(updates.quantity);
+    }
+
+    if (updates.price !== undefined) {
+      setClauses.push('price = ?');
+      params.push(updates.price);
+    }
+
+    if (setClauses.length === 0) {
+      return; // Nothing to update
+    }
+
+    params.push(id);
+
+    await execute(
+      `UPDATE trades SET ${setClauses.join(', ')} WHERE id = ?`,
+      params
+    );
+  },
+
+  async deleteTrade(id: number): Promise<void> {
+    await execute('DELETE FROM trades WHERE id = ?', [id]);
+  },
+
   // Ledger queries
   async getLedger(accountId?: number): Promise<Ledger[]> {
     let sql = 'SELECT * FROM ledger WHERE 1=1';
@@ -262,14 +308,14 @@ export const db = {
   },
 
   // Portfolio analytics queries
-  async getHoldings(accountId?: number): Promise<any[]> {
+  async getHoldings(accountId?: number, includeClosedPositions: boolean = false): Promise<any[]> {
     let sql = `
       SELECT 
         symbol,
         account_id,
         SUM(CASE WHEN trade_type = 'buy' THEN quantity ELSE -quantity END) as quantity,
-        SUM(CASE WHEN trade_type = 'buy' THEN quantity * price ELSE -quantity * price END) / 
-          SUM(CASE WHEN trade_type = 'buy' THEN quantity ELSE -quantity END) as avg_price
+        SUM(CASE WHEN trade_type = 'buy' THEN quantity * price ELSE 0 END) / 
+          NULLIF(SUM(CASE WHEN trade_type = 'buy' THEN quantity ELSE 0 END), 0) as avg_price
       FROM trades
       WHERE 1=1
     `;
@@ -282,9 +328,13 @@ export const db = {
 
     sql += `
       GROUP BY symbol, account_id
-      HAVING quantity > 0
-      ORDER BY symbol
     `;
+
+    if (!includeClosedPositions) {
+      sql += ' HAVING quantity > 0';
+    }
+
+    sql += ' ORDER BY symbol';
 
     return query(sql, params);
   },

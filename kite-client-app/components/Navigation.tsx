@@ -2,16 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Upload, Settings, PieChart, AlertTriangle, Wrench } from 'lucide-react';
+import { Home, Upload, Settings, PieChart, AlertTriangle, Wrench, BookOpen } from 'lucide-react';
 
 export default function Navigation() {
   const pathname = usePathname();
 
   const links = [
     { href: '/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/tradebook', label: 'Tradebook', icon: BookOpen },
+    { href: '/holdings', label: 'Holdings', icon: PieChart },
     { href: '/import', label: 'Import', icon: Upload },
     { href: '/conflicts', label: 'Conflicts', icon: AlertTriangle },
-    { href: '/holdings', label: 'Holdings', icon: PieChart },
     { href: '/tools', label: 'Tools', icon: Wrench },
     { href: '/settings/accounts', label: 'Accounts', icon: Settings },
   ];

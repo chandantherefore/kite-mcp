@@ -18,8 +18,11 @@ interface ManualStats {
   currentValue: number;
   totalPnl: number;
   totalPnlPercent: number;
+  totalRealizedPnL: number;
+  totalUnrealizedPnL: number;
   xirr: number | null;
   holdingsCount: number;
+  activeHoldingsCount: number;
   holdings: ManualHolding[];
 }
 
@@ -379,9 +382,12 @@ export default function Dashboard() {
               </div>
 
               <div className="text-sm text-gray-600 mb-4">
-                Showing analytics from CSV imports. {manualStats.holdingsCount} holdings tracked.
+                Showing analytics from CSV imports. {manualStats.holdingsCount} total stocks tracked ({manualStats.activeHoldingsCount} active, {manualStats.holdingsCount - manualStats.activeHoldingsCount} closed).
+                <br />
+                <span className="text-green-600">Realized P&L: ₹{manualStats.totalRealizedPnL.toLocaleString('en-IN')}</span> | 
+                <span className="text-blue-600 ml-2">Unrealized P&L: ₹{manualStats.totalUnrealizedPnL.toLocaleString('en-IN')}</span>
                 <a href="/holdings" className="ml-2 text-blue-600 hover:underline">
-                  View detailed analytics →
+                  → View detailed analytics
                 </a>
               </div>
             </>
