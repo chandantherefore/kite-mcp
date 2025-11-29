@@ -6,6 +6,10 @@ interface Account {
   id: number;
   name: string;
   broker_id: string | null;
+  last_tradebook_sync: string | null;
+  last_ledger_sync: string | null;
+  tradebook_records_count: number;
+  ledger_records_count: number;
 }
 
 interface ImportResult {
@@ -37,6 +41,14 @@ export default function ImportPage() {
       
       if (data.success) {
         setAccounts(data.accounts);
+        
+        // Show last sync for selected account
+        if (selectedAccount) {
+          const account = data.accounts.find((a: Account) => a.id.toString() === selectedAccount);
+          if (account) {
+            console.log('Last sync:', account);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch accounts:', err);
@@ -157,6 +169,33 @@ export default function ImportPage() {
               </option>
             ))}
           </select>
+          
+          {selectedAccount && accounts.find(a => a.id.toString() === selectedAccount) && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Last Sync Information</h3>
+              <div className="text-sm text-gray-600 space-y-1">
+                {(() => {
+                  const account = accounts.find(a => a.id.toString() === selectedAccount);
+                  return (
+                    <>
+                      <p>
+                        <span className="font-medium">Tradebook:</span>{' '}
+                        {account?.last_tradebook_sync
+                          ? `${new Date(account.last_tradebook_sync).toLocaleString()} (${account.tradebook_records_count} records)`
+                          : 'Never synced'}
+                      </p>
+                      <p>
+                        <span className="font-medium">Ledger:</span>{' '}
+                        {account?.last_ledger_sync
+                          ? `${new Date(account.last_ledger_sync).toLocaleString()} (${account.ledger_records_count} records)`
+                          : 'Never synced'}
+                      </p>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tradebook Upload */}
@@ -192,6 +231,14 @@ export default function ImportPage() {
               <p className={tradebookResult.success ? 'text-green-800' : 'text-red-800'}>
                 {tradebookResult.message || tradebookResult.error}
               </p>
+              {tradebookResult.conflicts > 0 && (
+                <p className="mt-2 text-yellow-700 text-sm">
+                  ⚠️ {tradebookResult.conflicts} conflict(s) detected.{' '}
+                  <a href="/conflicts" className="underline font-semibold">
+                    View and resolve conflicts
+                  </a>
+                </p>
+              )}
               {tradebookResult.errors && tradebookResult.errors.length > 0 && (
                 <details className="mt-2">
                   <summary className="cursor-pointer text-sm font-semibold">
@@ -241,6 +288,14 @@ export default function ImportPage() {
               <p className={ledgerResult.success ? 'text-green-800' : 'text-red-800'}>
                 {ledgerResult.message || ledgerResult.error}
               </p>
+              {ledgerResult.conflicts > 0 && (
+                <p className="mt-2 text-yellow-700 text-sm">
+                  ⚠️ {ledgerResult.conflicts} conflict(s) detected.{' '}
+                  <a href="/conflicts" className="underline font-semibold">
+                    View and resolve conflicts
+                  </a>
+                </p>
+              )}
               {ledgerResult.errors && ledgerResult.errors.length > 0 && (
                 <details className="mt-2">
                   <summary className="cursor-pointer text-sm font-semibold">

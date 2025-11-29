@@ -96,10 +96,9 @@ export async function GET(request: NextRequest) {
     );
 
     // Calculate total invested from ledger debits
-    const totalInvestedFromLedger = ledgerEntries.reduce(
-      (sum, entry) => sum + entry.debit,
-      0
-    );
+    const totalInvestedFromLedger = ledgerEntries && ledgerEntries.length > 0
+      ? ledgerEntries.reduce((sum, entry) => sum + (entry.debit || 0), 0)
+      : 0;
 
     // Get account info if specific account
     let accountInfo = null;
@@ -107,17 +106,23 @@ export async function GET(request: NextRequest) {
       accountInfo = await db.getAccountById(accountId);
     }
 
+    // Ensure all values are numbers
+    const safeNumber = (val: any): number => {
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
+
     return NextResponse.json({
       success: true,
       stats: {
         accountId: accountId || 'consolidated',
         accountName: accountInfo?.name || 'Consolidated',
-        totalInvestment: parseFloat(totalInvestment.toFixed(2)),
-        totalInvestedFromLedger: parseFloat(totalInvestedFromLedger.toFixed(2)),
-        currentValue: parseFloat(totalCurrentValue.toFixed(2)),
-        totalPnl: parseFloat(totalPnl.toFixed(2)),
-        totalPnlPercent: parseFloat(totalPnlPercent.toFixed(2)),
-        xirr: portfolioXirr ? parseFloat(portfolioXirr.toFixed(2)) : null,
+        totalInvestment: parseFloat(safeNumber(totalInvestment).toFixed(2)),
+        totalInvestedFromLedger: parseFloat(safeNumber(totalInvestedFromLedger).toFixed(2)),
+        currentValue: parseFloat(safeNumber(totalCurrentValue).toFixed(2)),
+        totalPnl: parseFloat(safeNumber(totalPnl).toFixed(2)),
+        totalPnlPercent: parseFloat(safeNumber(totalPnlPercent).toFixed(2)),
+        xirr: portfolioXirr ? parseFloat(safeNumber(portfolioXirr).toFixed(2)) : null,
         holdingsCount: enrichedHoldings.length,
         holdings: enrichedHoldings,
       },

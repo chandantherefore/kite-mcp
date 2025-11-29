@@ -94,6 +94,10 @@ export interface Account {
   broker_id: string | null;
   created_at: Date;
   updated_at: Date;
+  last_tradebook_sync: Date | null;
+  last_ledger_sync: Date | null;
+  tradebook_records_count: number;
+  ledger_records_count: number;
 }
 
 export interface Trade {
@@ -113,6 +117,8 @@ export interface Trade {
   order_id: string | null;
   order_execution_time: Date | null;
   created_at: Date;
+  import_batch_id: string | null;
+  import_date: Date | null;
 }
 
 export interface Ledger {
@@ -125,6 +131,22 @@ export interface Ledger {
   debit: number;
   credit: number;
   net_balance: number | null;
+  created_at: Date;
+  import_batch_id: string | null;
+  import_date: Date | null;
+}
+
+export interface ImportConflict {
+  id: number;
+  account_id: number;
+  import_type: 'tradebook' | 'ledger';
+  conflict_type: string;
+  existing_data: any;
+  new_data: any;
+  conflict_field: string | null;
+  status: 'pending' | 'resolved_keep_existing' | 'resolved_use_new' | 'resolved_manual' | 'ignored';
+  resolved_at: Date | null;
+  resolved_by: string | null;
   created_at: Date;
 }
 
@@ -299,6 +321,90 @@ export const db = {
     sql += ' ORDER BY trade_date';
 
     return query<Trade>(sql, params);
+  },
+
+  // Conflict management
+  async getConflicts(accountId?: number, status?: string): Promise<ImportConflict[]> {
+    let sql = 'SELECT * FROM import_conflicts WHERE 1=1';
+    const params: any[] = [];
+
+    if (accountId) {
+      sql += ' AND account_id = ?';
+      params.push(accountId);
+    }
+
+    if (status) {
+      sql += ' AND status = ?';
+      params.push(status);
+    }
+
+    sql += ' ORDER BY created_at DESC';
+
+    return query<ImportConflict>(sql, params);
+  },
+
+  async createConflict(conflict: Omit<ImportConflict, 'id' | 'created_at'>): Promise<number> {
+    return insert(
+      `INSERT INTO import_conflicts (
+        account_id, import_type, conflict_type, existing_data, new_data,
+        conflict_field, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        conflict.account_id,
+        conflict.import_type,
+        conflict.conflict_type,
+        JSON.stringify(conflict.existing_data),
+        JSON.stringify(conflict.new_data),
+        conflict.conflict_field,
+        conflict.status,
+      ]
+    );
+  },
+
+  async resolveConflict(id: number, status: string, resolvedBy?: string): Promise<number> {
+    return execute(
+      'UPDATE import_conflicts SET status = ?, resolved_at = NOW(), resolved_by = ? WHERE id = ?',
+      [status, resolvedBy || 'system', id]
+    );
+  },
+
+  async deleteConflict(id: number): Promise<number> {
+    return execute('DELETE FROM import_conflicts WHERE id = ?', [id]);
+  },
+
+  // Update account sync timestamps
+  async updateAccountSync(accountId: number, type: 'tradebook' | 'ledger', recordCount: number): Promise<number> {
+    if (type === 'tradebook') {
+      return execute(
+        'UPDATE accounts SET last_tradebook_sync = NOW(), tradebook_records_count = tradebook_records_count + ? WHERE id = ?',
+        [recordCount, accountId]
+      );
+    } else {
+      return execute(
+        'UPDATE accounts SET last_ledger_sync = NOW(), ledger_records_count = ledger_records_count + ? WHERE id = ?',
+        [recordCount, accountId]
+      );
+    }
+  },
+
+  // Apply stock split
+  async applyStockSplit(
+    accountId: number,
+    symbol: string,
+    splitDate: Date,
+    oldRatio: number,
+    newRatio: number
+  ): Promise<number> {
+    const multiplier = newRatio / oldRatio;
+    return execute(
+      `UPDATE trades 
+       SET quantity = quantity * ?, 
+           price = price / ?
+       WHERE account_id = ? 
+         AND symbol = ? 
+         AND trade_date < ?`,
+      [multiplier, multiplier, accountId, symbol, splitDate]
+    );
   },
 };
 
