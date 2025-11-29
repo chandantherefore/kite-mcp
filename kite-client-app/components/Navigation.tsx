@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Upload, Settings, PieChart, AlertTriangle, Wrench, BookOpen, Key } from 'lucide-react';
+import { Home, Upload, Settings, PieChart, AlertTriangle, Wrench, BookOpen, Key, FileText } from 'lucide-react';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -11,6 +11,7 @@ export default function Navigation() {
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/tradebook', label: 'Tradebook', icon: BookOpen },
     { href: '/holdings', label: 'Holdings', icon: PieChart },
+    { href: '/ledger', label: 'Ledger', icon: FileText },
     { href: '/import', label: 'Import', icon: Upload },
     { href: '/conflicts', label: 'Conflicts', icon: AlertTriangle },
     { href: '/tools', label: 'Tools', icon: Wrench },

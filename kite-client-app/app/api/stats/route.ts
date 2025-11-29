@@ -90,6 +90,8 @@ export async function GET(request: NextRequest) {
     let totalCurrentValue = 0;
     let totalRealizedPnL = 0;
     let totalUnrealizedPnL = 0;
+    let totalSoldValue = 0;
+    let totalSoldCost = 0;
 
     const enrichedHoldings = await Promise.all(
       holdings.map(async (holding) => {
@@ -109,28 +111,31 @@ export async function GET(request: NextRequest) {
         const currentPrice = currentPrices[holding.symbol] || 0;
         const currentQuantity = parseFloat(holding.quantity.toString());
 
-        // Current value (for remaining holdings)
+        // Current value (for remaining holdings ONLY)
         const currentValue = currentQuantity * currentPrice;
-
+        
         // Realized P&L (from completed sales) - approximate using FIFO
         const avgBuyPrice = holding.avg_price || 0;
         const soldQuantity = trades
           .filter(t => t.trade_type === 'sell')
           .reduce((sum, t) => sum + t.quantity, 0);
-        const realizedPnL = totalSellAmount - (soldQuantity * avgBuyPrice);
-
+        const soldCost = soldQuantity * avgBuyPrice;
+        const realizedPnL = totalSellAmount - soldCost;
+        
         // Unrealized P&L (from current holdings)
         const unrealizedPnL = currentValue - (currentQuantity * avgBuyPrice);
-
+        
         // Total P&L = Realized + Unrealized
         const totalPnL = realizedPnL + unrealizedPnL;
         const investment = totalBuyAmount;
         const pnlPercent = investment > 0 ? (totalPnL / investment) * 100 : 0;
 
         totalInvestment += investment;
-        totalCurrentValue += currentValue;
+        totalCurrentValue += currentValue; // Only active holdings
         totalRealizedPnL += realizedPnL;
         totalUnrealizedPnL += unrealizedPnL;
+        totalSoldValue += totalSellAmount;
+        totalSoldCost += soldCost;
 
         // Calculate XIRR
         const stockXirr = calculateStockXIRR(
@@ -189,9 +194,12 @@ export async function GET(request: NextRequest) {
         totalPnlPercent: parseFloat(safeNumber(totalPnlPercent).toFixed(2)),
         totalRealizedPnL: parseFloat(safeNumber(totalRealizedPnL).toFixed(2)),
         totalUnrealizedPnL: parseFloat(safeNumber(totalUnrealizedPnL).toFixed(2)),
+        totalSoldValue: parseFloat(safeNumber(totalSoldValue).toFixed(2)),
+        totalSoldCost: parseFloat(safeNumber(totalSoldCost).toFixed(2)),
         xirr: portfolioXirr ? parseFloat(safeNumber(portfolioXirr).toFixed(2)) : null,
         holdingsCount: enrichedHoldings.length,
         activeHoldingsCount: enrichedHoldings.filter(h => h.quantity > 0).length,
+        soldHoldingsCount: enrichedHoldings.filter(h => h.quantity === 0).length,
         holdings: enrichedHoldings,
       },
     });

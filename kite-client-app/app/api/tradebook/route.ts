@@ -1,6 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as db from '@/lib/db';
 import { calculateStockXIRR } from '@/lib/xirr-calculator';
+import { executeKiteTool } from '@/lib/kite-service';
+
+// Helper to get live prices
+async function getLivePrices(symbols: string[]): Promise<Record<string, number>> {
+    const prices: Record<string, number> = {};
+
+    if (symbols.length === 0) {
+        return prices;
+    }
+
+    try {
+        const instruments = symbols.map(symbol => `NSE:${symbol}`);
+        const result = await executeKiteTool('get_ltp', { instruments });
+
+        if (result && typeof result === 'object') {
+            for (const symbol of symbols) {
+                const instrumentKey = `NSE:${symbol}`;
+                if (result[instrumentKey] && result[instrumentKey].last_price) {
+                    prices[symbol] = result[instrumentKey].last_price;
+                } else {
+                    prices[symbol] = 0;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching live prices:', error);
+        for (const symbol of symbols) {
+            prices[symbol] = 0;
+        }
+    }
+
+    return prices;
+}
 
 interface TradeGroup {
     symbol: string;
@@ -13,8 +46,13 @@ interface TradeGroup {
     totalSellValue: number;
     avgBuyPrice: number;
     avgSellPrice: number;
+    currentPrice: number;
+    currentValue: number;
     realizedPnL: number;
     realizedPnLPercent: number;
+    unrealizedPnL: number;
+    unrealizedPnLPercent: number;
+    totalPnL: number;
     status: 'active' | 'sold';
     xirr: number | null;
     trades: any[];
@@ -122,6 +160,10 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        // Get live prices for all symbols
+        const uniqueSymbols = Array.from(tradeGroups.keys()).map(key => key.split('_')[0]);
+        const livePrices = await getLivePrices(uniqueSymbols);
+
         // Calculate derived values for each group
         const processedGroups: TradeGroup[] = [];
 
@@ -138,6 +180,13 @@ export async function GET(request: NextRequest) {
                 ? group.totalSellValue / group.totalSellQuantity
                 : 0;
 
+            // Get current price
+            const currentPrice = livePrices[group.symbol] || 0;
+            group.currentPrice = currentPrice;
+
+            // Calculate current value (for active holdings)
+            group.currentValue = group.netQuantity * currentPrice;
+
             // Calculate realized P&L (from completed sales)
             const soldQuantity = group.totalSellQuantity;
             const costOfSold = soldQuantity * group.avgBuyPrice;
@@ -146,6 +195,16 @@ export async function GET(request: NextRequest) {
                 ? (group.realizedPnL / costOfSold) * 100
                 : 0;
 
+            // Calculate unrealized P&L (from active holdings)
+            const activeCost = group.netQuantity * group.avgBuyPrice;
+            group.unrealizedPnL = group.currentValue - activeCost;
+            group.unrealizedPnLPercent = activeCost > 0
+                ? (group.unrealizedPnL / activeCost) * 100
+                : 0;
+
+            // Total P&L
+            group.totalPnL = group.realizedPnL + group.unrealizedPnL;
+
             // Determine status
             group.status = group.netQuantity === 0 ? 'sold' : 'active';
 
@@ -153,7 +212,7 @@ export async function GET(request: NextRequest) {
             try {
                 group.xirr = calculateStockXIRR(
                     group.trades,
-                    0, // No current price needed for sold positions
+                    currentPrice,
                     group.netQuantity
                 );
             } catch (err) {

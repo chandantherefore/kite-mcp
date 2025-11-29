@@ -30,8 +30,13 @@ interface TradeGroup {
   totalSellValue: number;
   avgBuyPrice: number;
   avgSellPrice: number;
+  currentPrice: number;
+  currentValue: number;
   realizedPnL: number;
   realizedPnLPercent: number;
+  unrealizedPnL: number;
+  unrealizedPnLPercent: number;
+  totalPnL: number;
   status: 'active' | 'sold';
   xirr: number | null;
   trades: Trade[];
@@ -726,61 +731,80 @@ export default function TradebookPage() {
                       </div>
 
                       {/* Stats */}
-                      <div className="flex items-center gap-6">
-                        {/* Quantities */}
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500">Buy / Sell</div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {group.totalBuyQuantity.toFixed(2)} / {group.totalSellQuantity.toFixed(2)}
-                          </div>
-                        </div>
-
+                      <div className="flex items-center gap-4 text-sm">
                         {/* Net Quantity */}
-                        <div className="text-right">
+                        <div className="text-right min-w-[80px]">
                           <div className="text-xs text-gray-500">Net Qty</div>
-                          <div className={`text-sm font-bold ${isSold ? 'text-gray-600' : 'text-blue-600'}`}>
+                          <div className={`font-bold ${isSold ? 'text-gray-600' : 'text-blue-600'}`}>
                             {group.netQuantity.toFixed(2)}
                           </div>
                         </div>
 
-                        {/* Buy Value */}
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500">Buy Value</div>
-                          <div className="text-sm font-medium text-gray-900">
+                        {/* Buy/Sell Values */}
+                        <div className="text-right min-w-[100px]">
+                          <div className="text-xs text-gray-500">Buy / Sell</div>
+                          <div className="font-medium text-gray-900">
                             {formatCurrency(group.totalBuyValue)}
-                          </div>
-                        </div>
-
-                        {/* Sell Value */}
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500">Sell Value</div>
-                          <div className="text-sm font-medium text-gray-900">
+                            <span className="text-gray-400 mx-1">/</span>
                             {formatCurrency(group.totalSellValue)}
                           </div>
                         </div>
 
-                        {/* Realized P&L */}
-                        <div className="text-right min-w-[120px]">
-                          <div className="text-xs text-gray-500">Realized P&L</div>
-                          <div className={`text-sm font-bold flex items-center justify-end gap-1 ${
-                            group.realizedPnL >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {group.realizedPnL >= 0 ? (
-                              <TrendingUp className="h-4 w-4" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4" />
+                        {/* Current Price (Live) */}
+                        <div className="text-right min-w-[100px]">
+                          <div className="text-xs text-gray-500">Current Price</div>
+                          <div className="font-medium text-gray-900">
+                            {group.currentPrice > 0 ? formatCurrency(group.currentPrice) : 'N/A'}
+                            {group.currentPrice > 0 && (
+                              <span className="text-xs text-green-600 ml-1">🔴 Live</span>
                             )}
-                            {formatCurrency(Math.abs(group.realizedPnL))}
-                            <span className="text-xs">
-                              ({group.realizedPnLPercent.toFixed(2)}%)
-                            </span>
                           </div>
                         </div>
+
+                        {/* Realized P&L */}
+                        <div className="text-right min-w-[110px]">
+                          <div className="text-xs text-gray-500">Realized P&L</div>
+                          <div className={`font-bold flex items-center justify-end gap-1 ${
+                            group.realizedPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {group.realizedPnL >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                            {formatCurrency(Math.abs(group.realizedPnL))}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            ({group.realizedPnLPercent.toFixed(2)}%)
+                          </div>
+                        </div>
+
+                        {/* Unrealized P&L (for active only) */}
+                        {!isSold && (
+                          <div className="text-right min-w-[110px]">
+                            <div className="text-xs text-gray-500">Unrealized P&L</div>
+                            <div className={`font-bold flex items-center justify-end gap-1 ${
+                              group.unrealizedPnL >= 0 ? 'text-blue-600' : 'text-orange-600'
+                            }`}>
+                              {group.unrealizedPnL >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                              {formatCurrency(Math.abs(group.unrealizedPnL))}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ({group.unrealizedPnLPercent.toFixed(2)}%)
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Current Value (for sold, show sell value) */}
+                        {isSold && group.totalSellValue > 0 && (
+                          <div className="text-right min-w-[110px]">
+                            <div className="text-xs text-gray-500">Sold At</div>
+                            <div className="font-medium text-gray-700">
+                              {formatCurrency(group.totalSellValue)}
+                            </div>
+                          </div>
+                        )}
 
                         {/* XIRR */}
                         <div className="text-right min-w-[80px]">
                           <div className="text-xs text-gray-500">XIRR</div>
-                          <div className="text-sm font-semibold text-gray-900">
+                          <div className="font-semibold text-gray-900">
                             {group.xirr !== null ? `${group.xirr.toFixed(2)}%` : 'N/A'}
                           </div>
                         </div>

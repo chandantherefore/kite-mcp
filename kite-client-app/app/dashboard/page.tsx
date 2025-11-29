@@ -20,9 +20,12 @@ interface ManualStats {
   totalPnlPercent: number;
   totalRealizedPnL: number;
   totalUnrealizedPnL: number;
+  totalSoldValue: number;
+  totalSoldCost: number;
   xirr: number | null;
   holdingsCount: number;
   activeHoldingsCount: number;
+  soldHoldingsCount: number;
   holdings: ManualHolding[];
 }
 
@@ -396,13 +399,18 @@ export default function Dashboard() {
               </div>
 
               <div className="text-sm text-gray-600 mb-4">
-                Showing analytics from CSV imports. {manualStats.holdingsCount} total stocks tracked ({manualStats.activeHoldingsCount} active, {manualStats.holdingsCount - manualStats.activeHoldingsCount} closed).
+                Showing analytics from CSV imports. {manualStats.holdingsCount} total stocks tracked ({manualStats.activeHoldingsCount} active, {manualStats.soldHoldingsCount} sold).
                 <br />
-                <span className="text-green-600">Realized P&L: ₹{manualStats.totalRealizedPnL.toLocaleString('en-IN')}</span> | 
-                <span className="text-blue-600 ml-2">Unrealized P&L: ₹{manualStats.totalUnrealizedPnL.toLocaleString('en-IN')}</span>
-                <a href="/holdings" className="ml-2 text-blue-600 hover:underline">
+                <span className="text-gray-700">Sold: ₹{manualStats.totalSoldValue.toLocaleString('en-IN')} (cost: ₹{manualStats.totalSoldCost.toLocaleString('en-IN')})</span> | 
+                <span className={`ml-2 ${manualStats.totalRealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  Realized P&L: {manualStats.totalRealizedPnL >= 0 ? '+' : ''}₹{manualStats.totalRealizedPnL.toLocaleString('en-IN')}
+                </span> | 
+                <span className={`ml-2 ${manualStats.totalUnrealizedPnL >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                  Unrealized P&L: {manualStats.totalUnrealizedPnL >= 0 ? '+' : ''}₹{manualStats.totalUnrealizedPnL.toLocaleString('en-IN')}
+                </span>
+                <button onClick={() => router.push('/holdings')} className="ml-2 text-blue-600 hover:underline">
                   → View detailed analytics
-                </a>
+                </button>
               </div>
             </>
           ) : (
