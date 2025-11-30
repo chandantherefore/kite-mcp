@@ -83,7 +83,7 @@ async function loadCredentials(): Promise<void> {
 // Save credentials
 async function saveCredentials(): Promise<void> {
   const credentialsMap: Record<string, KiteCredentials> = {};
-  
+
   for (const [clientId, session] of sessions.entries()) {
     credentialsMap[clientId] = session.credentials;
   }
@@ -97,13 +97,20 @@ async function saveCredentials(): Promise<void> {
 
 // Get session for a client
 function getSession(clientId?: string): KiteSession {
+  console.log(`[KiteService] getSession called with clientId: ${clientId || 'none'}`);
+  console.log(`[KiteService] Available sessions: ${Array.from(sessions.keys()).join(', ') || 'none'}`);
+
   if (!clientId) {
     if (sessions.size === 1) {
-      return Array.from(sessions.values())[0];
+      const session = Array.from(sessions.values())[0];
+      console.log(`[KiteService] Using single available session`);
+      return session;
     } else if (sessions.size === 0) {
+      console.error('[KiteService] No authenticated sessions available');
       throw new Error('Not authenticated. Please login first.');
     } else {
       const availableIds = Array.from(sessions.keys()).join(', ');
+      console.error(`[KiteService] Multiple sessions available: ${availableIds}`);
       throw new Error(
         `Multiple accounts available (${availableIds}). Please specify 'client_id' parameter.`
       );
@@ -112,9 +119,11 @@ function getSession(clientId?: string): KiteSession {
 
   const session = sessions.get(clientId);
   if (!session || !session.credentials.access_token) {
+    console.error(`[KiteService] Session not found or no access token for client_id: ${clientId}`);
     throw new Error(`Not authenticated for client_id '${clientId}'. Please login first.`);
   }
 
+  console.log(`[KiteService] Using session for client_id: ${clientId}`);
   return session;
 }
 
@@ -127,7 +136,9 @@ function getAccountConfig(clientId: string): AccountConfig | undefined {
 let initialized = false;
 async function ensureInitialized() {
   if (!initialized) {
+    console.log('[KiteService] Initializing, loading credentials from:', CREDENTIALS_PATH);
     await loadCredentials();
+    console.log(`[KiteService] Loaded ${sessions.size} session(s): ${Array.from(sessions.keys()).join(', ')}`);
     initialized = true;
   }
 }
@@ -146,7 +157,7 @@ export async function executeKiteTool(tool: string, args: any = {}) {
       case 'login': {
         const { client_id, api_key, api_secret } = args;
         const config = getAccountConfig(client_id);
-        
+
         const finalApiKey = api_key || config?.apiKey;
         const finalApiSecret = api_secret || config?.apiSecret;
 
@@ -176,7 +187,7 @@ export async function executeKiteTool(tool: string, args: any = {}) {
       case 'generate_session': {
         const { client_id, request_token } = args;
         const session = sessions.get(client_id);
-        
+
         if (!session || !session.credentials.api_secret) {
           throw new Error(`Please call 'login' first for client_id '${client_id}'.`);
         }
@@ -213,12 +224,12 @@ export async function executeKiteTool(tool: string, args: any = {}) {
       case 'get_holdings': {
         const session = getSession(args.client_id);
         const holdings = await session.kc.getHoldings();
-        
+
         if (args.limit || args.from) {
           const from = args.from || 0;
           const limit = args.limit || holdings.length;
           const paginated = holdings.slice(from, from + limit);
-          
+
           return {
             holdings: paginated,
             pagination: {
@@ -229,19 +240,19 @@ export async function executeKiteTool(tool: string, args: any = {}) {
             },
           };
         }
-        
+
         return holdings;
       }
 
       case 'get_mf_holdings': {
         const session = getSession(args.client_id);
         const holdings = await session.kc.getMFHoldings();
-        
+
         if (args.limit || args.from) {
           const from = args.from || 0;
           const limit = args.limit || holdings.length;
           const paginated = holdings.slice(from, from + limit);
-          
+
           return {
             mf_holdings: paginated,
             pagination: {
@@ -252,49 +263,49 @@ export async function executeKiteTool(tool: string, args: any = {}) {
             },
           };
         }
-        
+
         return holdings;
       }
 
       case 'get_positions': {
         const session = getSession(args.client_id);
         const positions = await session.kc.getPositions();
-        
+
         if (args.limit || args.from) {
           const from = args.from || 0;
           const limit = args.limit;
-          
+
           const result: any = { ...positions };
-          
+
           if (positions.net) {
             result.net = positions.net.slice(from, limit ? from + limit : undefined);
           }
           if (positions.day) {
             result.day = positions.day.slice(from, limit ? from + limit : undefined);
           }
-          
+
           result.pagination = {
             total_net: positions.net?.length || 0,
             total_day: positions.day?.length || 0,
             from,
             limit: limit || 'all',
           };
-          
+
           return result;
         }
-        
+
         return positions;
       }
 
       case 'get_orders': {
         const session = getSession(args.client_id);
         const orders = await session.kc.getOrders();
-        
+
         if (args.limit || args.from) {
           const from = args.from || 0;
           const limit = args.limit || orders.length;
           const paginated = orders.slice(from, from + limit);
-          
+
           return {
             orders: paginated,
             pagination: {
@@ -305,7 +316,7 @@ export async function executeKiteTool(tool: string, args: any = {}) {
             },
           };
         }
-        
+
         return orders;
       }
 
@@ -330,8 +341,11 @@ export async function executeKiteTool(tool: string, args: any = {}) {
       }
 
       case 'get_ltp': {
+        console.log('[KiteService] get_ltp called with instruments:', args.instruments?.length, 'items');
         const session = getSession(args.client_id);
-        return await session.kc.getLTP(args.instruments);
+        const result = await session.kc.getLTP(args.instruments);
+        console.log('[KiteService] get_ltp result received');
+        return result;
       }
 
       default:

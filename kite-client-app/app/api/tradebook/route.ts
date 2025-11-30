@@ -11,6 +11,8 @@ async function getLivePrices(symbols: string[], clientId?: string): Promise<Reco
         return prices;
     }
 
+    console.log(`[getLivePrices] Fetching prices for ${symbols.length} symbols, clientId: ${clientId || 'auto-detect'}`);
+
     try {
         const instruments = symbols.map(symbol => `NSE:${symbol}`);
         const args: any = { instruments };
@@ -20,27 +22,35 @@ async function getLivePrices(symbols: string[], clientId?: string): Promise<Reco
             args.client_id = clientId;
         }
 
+        console.log('[getLivePrices] Calling executeKiteTool with args:', JSON.stringify(args, null, 2));
         const result = await executeKiteTool('get_ltp', args);
+        console.log('[getLivePrices] Result received:', result ? 'Data received' : 'No data');
 
         if (result && typeof result === 'object') {
             for (const symbol of symbols) {
                 const instrumentKey = `NSE:${symbol}`;
                 if (result[instrumentKey] && result[instrumentKey].last_price) {
                     prices[symbol] = result[instrumentKey].last_price;
+                    console.log(`[getLivePrices] ${symbol}: ₹${result[instrumentKey].last_price}`);
                 } else {
                     prices[symbol] = 0;
+                    console.log(`[getLivePrices] ${symbol}: No price data available`);
                 }
             }
+        } else {
+            console.error('[getLivePrices] Invalid result format:', result);
         }
-    } catch (error) {
-        console.error('Error fetching live prices:', error);
+    } catch (error: any) {
+        console.error('[getLivePrices] Error fetching live prices:', error);
+        console.error('[getLivePrices] Error stack:', error.stack);
+        console.error('[getLivePrices] Error message:', error.message);
         // Set all symbols to 0 on error
         for (const symbol of symbols) {
             prices[symbol] = 0;
         }
     }
 
-
+    console.log(`[getLivePrices] Final prices object:`, prices);
     return prices;
 }
 
@@ -175,7 +185,11 @@ export async function GET(request: NextRequest) {
         }
 
         // Get live prices for all symbols
-        const uniqueSymbols = Array.from(tradeGroups.keys()).map(key => key.split('_')[0]);
+        const uniqueSymbols = Array.from(new Set(
+            Array.from(tradeGroups.keys()).map(key => key.split('_')[0])
+        ));
+
+        console.log(`[Tradebook API] Processing ${uniqueSymbols.length} unique symbols`);
 
         // Determine which client_id to use for live prices
         // If filtering by specific account, use that account's client_id
@@ -185,15 +199,22 @@ export async function GET(request: NextRequest) {
         if (accountId) {
             // Find the account and get its client_id/broker_id
             const account = accounts.find(a => a.id === accountId);
+            console.log(`[Tradebook API] Looking for account ${accountId}, found:`, account);
             if (account && account.broker_id) {
                 clientIdForPrices = account.broker_id;
+                console.log(`[Tradebook API] Using broker_id as client_id: ${clientIdForPrices}`);
+            } else {
+                console.log(`[Tradebook API] Account found but no broker_id set`);
             }
+        } else {
+            console.log(`[Tradebook API] No specific account selected, will use any available session`);
         }
 
         // If no specific account or broker_id not set, let getSession handle it
         // (it will use the first available session if only one exists)
         const livePrices = await getLivePrices(uniqueSymbols, clientIdForPrices);
-        console.log(livePrices);
+        console.log(`[Tradebook API] Live prices fetched:`, livePrices);
+
         // Calculate derived values for each group
         const processedGroups: TradeGroup[] = [];
 
