@@ -4,7 +4,7 @@ import { calculateStockXIRR } from '@/lib/xirr-calculator';
 import { executeKiteTool } from '@/lib/kite-service';
 
 // Helper to get live prices
-async function getLivePrices(symbols: string[]): Promise<Record<string, number>> {
+async function getLivePrices(symbols: string[], clientId?: string): Promise<Record<string, number>> {
     const prices: Record<string, number> = {};
 
     if (symbols.length === 0) {
@@ -13,7 +13,14 @@ async function getLivePrices(symbols: string[]): Promise<Record<string, number>>
 
     try {
         const instruments = symbols.map(symbol => `NSE:${symbol}`);
-        const result = await executeKiteTool('get_ltp', { instruments });
+        const args: any = { instruments };
+
+        // Add client_id if provided
+        if (clientId) {
+            args.client_id = clientId;
+        }
+
+        const result = await executeKiteTool('get_ltp', args);
 
         if (result && typeof result === 'object') {
             for (const symbol of symbols) {
@@ -27,10 +34,12 @@ async function getLivePrices(symbols: string[]): Promise<Record<string, number>>
         }
     } catch (error) {
         console.error('Error fetching live prices:', error);
+        // Set all symbols to 0 on error
         for (const symbol of symbols) {
             prices[symbol] = 0;
         }
     }
+
 
     return prices;
 }
@@ -126,8 +135,13 @@ export async function GET(request: NextRequest) {
                     totalSellValue: 0,
                     avgBuyPrice: 0,
                     avgSellPrice: 0,
+                    currentPrice: 0,
+                    currentValue: 0,
                     realizedPnL: 0,
                     realizedPnLPercent: 0,
+                    unrealizedPnL: 0,
+                    unrealizedPnLPercent: 0,
+                    totalPnL: 0,
                     status: 'active',
                     xirr: null,
                     trades: [],
@@ -162,8 +176,24 @@ export async function GET(request: NextRequest) {
 
         // Get live prices for all symbols
         const uniqueSymbols = Array.from(tradeGroups.keys()).map(key => key.split('_')[0]);
-        const livePrices = await getLivePrices(uniqueSymbols);
 
+        // Determine which client_id to use for live prices
+        // If filtering by specific account, use that account's client_id
+        // Otherwise, try to find the first authenticated account
+        let clientIdForPrices: string | undefined;
+
+        if (accountId) {
+            // Find the account and get its client_id/broker_id
+            const account = accounts.find(a => a.id === accountId);
+            if (account && account.broker_id) {
+                clientIdForPrices = account.broker_id;
+            }
+        }
+
+        // If no specific account or broker_id not set, let getSession handle it
+        // (it will use the first available session if only one exists)
+        const livePrices = await getLivePrices(uniqueSymbols, clientIdForPrices);
+        console.log(livePrices);
         // Calculate derived values for each group
         const processedGroups: TradeGroup[] = [];
 

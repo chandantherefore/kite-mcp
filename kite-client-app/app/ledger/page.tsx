@@ -20,6 +20,11 @@ interface LedgerEntry {
   net_balance: number | null;
 }
 
+interface CategoryBreakdown {
+  debit: number;
+  credit: number;
+}
+
 interface AccountSummary {
   accountId: number;
   accountName: string;
@@ -28,11 +33,11 @@ interface AccountSummary {
   netCashFlow: number;
   investedValue: number;
   categories: {
-    feesAndCharges: number;
-    fundsAdded: number;
-    internalAdjustment: number;
-    fundsWithdrawn: number;
-    dematMovement: number;
+    feesAndCharges: CategoryBreakdown;
+    fundsAdded: CategoryBreakdown;
+    internalAdjustment: CategoryBreakdown;
+    fundsWithdrawn: CategoryBreakdown;
+    dematMovement: CategoryBreakdown;
   };
   entries: LedgerEntry[];
 }
@@ -98,12 +103,30 @@ export default function LedgerPage() {
     const totalWithdrawn = totalCredit;
     const availableCash = netCashFlow;
     
-    // Category totals
-    const feesAndCharges = data.reduce((sum, acc) => sum + acc.categories.feesAndCharges, 0);
-    const fundsAdded = data.reduce((sum, acc) => sum + acc.categories.fundsAdded, 0);
-    const internalAdjustment = data.reduce((sum, acc) => sum + acc.categories.internalAdjustment, 0);
-    const fundsWithdrawn = data.reduce((sum, acc) => sum + acc.categories.fundsWithdrawn, 0);
-    const dematMovement = data.reduce((sum, acc) => sum + acc.categories.dematMovement, 0);
+    // Category totals - aggregate debit and credit separately
+    const categories = {
+      feesAndCharges: {
+        debit: data.reduce((sum, acc) => sum + acc.categories.feesAndCharges.debit, 0),
+        credit: data.reduce((sum, acc) => sum + acc.categories.feesAndCharges.credit, 0),
+      },
+      fundsAdded: {
+        debit: data.reduce((sum, acc) => sum + acc.categories.fundsAdded.debit, 0),
+        credit: data.reduce((sum, acc) => sum + acc.categories.fundsAdded.credit, 0),
+      },
+      internalAdjustment: {
+        debit: data.reduce((sum, acc) => sum + acc.categories.internalAdjustment.debit, 0),
+        credit: data.reduce((sum, acc) => sum + acc.categories.internalAdjustment.credit, 0),
+      },
+      fundsWithdrawn: {
+        debit: data.reduce((sum, acc) => sum + acc.categories.fundsWithdrawn.debit, 0),
+        credit: data.reduce((sum, acc) => sum + acc.categories.fundsWithdrawn.credit, 0),
+      },
+      dematMovement: {
+        debit: data.reduce((sum, acc) => sum + acc.categories.dematMovement.debit, 0),
+        credit: data.reduce((sum, acc) => sum + acc.categories.dematMovement.credit, 0),
+      },
+    };
+
     const investedValue = data.reduce((sum, acc) => sum + acc.investedValue, 0);
 
     return {
@@ -111,11 +134,7 @@ export default function LedgerPage() {
       totalWithdrawn,
       netCashFlow,
       availableCash,
-      feesAndCharges,
-      fundsAdded,
-      internalAdjustment,
-      fundsWithdrawn,
-      dematMovement,
+      categories,
       investedValue,
       totalEntries: data.reduce((sum, acc) => sum + acc.entries.length, 0),
     };
@@ -214,7 +233,7 @@ export default function LedgerPage() {
 
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-sm text-gray-600">Total Withdrawn</div>
+              <div className="text-sm text-gray-600">Total Used</div>
               <ArrowUpCircle className="h-5 w-5 text-green-500" />
             </div>
             <div className="text-2xl font-bold text-green-600">
@@ -225,27 +244,27 @@ export default function LedgerPage() {
 
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-sm text-gray-600">Net Cash Flow</div>
+              <div className="text-sm text-gray-600">Net Cash Balance</div>
               <Wallet className="h-5 w-5 text-blue-500" />
             </div>
             <div className={`text-2xl font-bold ${summary.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {summary.netCashFlow >= 0 ? '+' : '-'}{formatCurrency(summary.netCashFlow)}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {summary.netCashFlow >= 0 ? 'More withdrawn than invested' : 'More invested than withdrawn'}
+              {summary.netCashFlow >= 0 ? 'Cash Available' : 'Cash Used'}
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-sm text-gray-600">Actual Invested</div>
+              <div className="text-sm text-gray-600">Avaiable for Withdrawal</div>
               <TrendingDown className="h-5 w-5 text-purple-500" />
             </div>
             <div className="text-2xl font-bold text-purple-600">
               {formatCurrency(Math.abs(summary.netCashFlow))}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              Current net investment in market
+              Current net cash balance
             </div>
           </div>
         </div>
@@ -254,30 +273,104 @@ export default function LedgerPage() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Transaction Categories</h3>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="text-xs text-gray-600 mb-1">Book Voucher</div>
-              <div className="font-semibold text-gray-900">{formatCurrency(summary.feesAndCharges)}</div>
-              <div className="text-xs text-gray-500 mt-1">Fees & Charges</div>
+            {/* Book Voucher */}
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="text-xs font-semibold text-gray-700 mb-2">Book Voucher</div>
+              <div className="text-xs text-gray-500 mb-3">Fees & Charges</div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-red-600 font-medium">Debit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.feesAndCharges.debit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-green-600 font-medium">Credit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.feesAndCharges.credit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-2 border-t border-gray-300">
+                  <span className="font-bold text-gray-700">Difference:</span>
+                  <span className="font-bold text-gray-900">{formatCurrency(Math.abs(summary.categories.feesAndCharges.credit - summary.categories.feesAndCharges.debit))}</span>
+                </div>
+              </div>
             </div>
-            <div className="p-4 bg-green-50 rounded-lg">
-              <div className="text-xs text-gray-600 mb-1">Bank Receipts</div>
-              <div className="font-semibold text-green-700">{formatCurrency(summary.fundsAdded)}</div>
-              <div className="text-xs text-gray-500 mt-1">Funds Added</div>
+
+            {/* Bank Receipts */}
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-xs font-semibold text-green-800 mb-2">Bank Receipts</div>
+              <div className="text-xs text-gray-500 mb-3">Funds Added</div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-red-600 font-medium">Debit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.fundsAdded.debit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-green-600 font-medium">Credit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.fundsAdded.credit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-2 border-t border-green-300">
+                  <span className="font-bold text-green-700">Difference:</span>
+                  <span className="font-bold text-green-900">{formatCurrency(Math.abs(summary.categories.fundsAdded.credit - summary.categories.fundsAdded.debit))}</span>
+                </div>
+              </div>
             </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="text-xs text-gray-600 mb-1">Journal Entry</div>
-              <div className="font-semibold text-blue-700">{formatCurrency(summary.internalAdjustment)}</div>
-              <div className="text-xs text-gray-500 mt-1">Internal Adjustment</div>
+
+            {/* Journal Entry */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-xs font-semibold text-blue-800 mb-2">Journal Entry</div>
+              <div className="text-xs text-gray-500 mb-3">Internal Adjustment</div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-red-600 font-medium">Debit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.internalAdjustment.debit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-green-600 font-medium">Credit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.internalAdjustment.credit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-2 border-t border-blue-300">
+                  <span className="font-bold text-blue-700">Difference:</span>
+                  <span className="font-bold text-blue-900">{formatCurrency(Math.abs(summary.categories.internalAdjustment.credit - summary.categories.internalAdjustment.debit))}</span>
+                </div>
+              </div>
             </div>
-            <div className="p-4 bg-red-50 rounded-lg">
-              <div className="text-xs text-gray-600 mb-1">Bank Payments</div>
-              <div className="font-semibold text-red-700">{formatCurrency(summary.fundsWithdrawn)}</div>
-              <div className="text-xs text-gray-500 mt-1">Funds Withdrawn</div>
+
+            {/* Bank Payments */}
+            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+              <div className="text-xs font-semibold text-red-800 mb-2">Bank Payments</div>
+              <div className="text-xs text-gray-500 mb-3">Funds Withdrawn</div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-red-600 font-medium">Debit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.fundsWithdrawn.debit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-green-600 font-medium">Credit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.fundsWithdrawn.credit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-2 border-t border-red-300">
+                  <span className="font-bold text-red-700">Difference:</span>
+                  <span className="font-bold text-red-900">{formatCurrency(Math.abs(summary.categories.fundsWithdrawn.credit - summary.categories.fundsWithdrawn.debit))}</span>
+                </div>
+              </div>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <div className="text-xs text-gray-600 mb-1">Delivery Voucher</div>
-              <div className="font-semibold text-purple-700">{formatCurrency(summary.dematMovement)}</div>
-              <div className="text-xs text-gray-500 mt-1">Demat Movement</div>
+
+            {/* Delivery Voucher */}
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="text-xs font-semibold text-purple-800 mb-2">Delivery Voucher</div>
+              <div className="text-xs text-gray-500 mb-3">Demat Movement</div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-red-600 font-medium">Debit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.dematMovement.debit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-green-600 font-medium">Credit:</span>
+                  <span className="font-semibold">{formatCurrency(summary.categories.dematMovement.credit)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-2 border-t border-purple-300">
+                  <span className="font-bold text-purple-700">Difference:</span>
+                  <span className="font-bold text-purple-900">{formatCurrency(Math.abs(summary.categories.dematMovement.credit - summary.categories.dematMovement.debit))}</span>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -286,20 +379,19 @@ export default function LedgerPage() {
             <div className="text-sm font-medium text-purple-900 mb-2">Actual Invested Value Calculation:</div>
             <div className="text-sm text-purple-800 space-y-1">
               <div className="flex justify-between">
-                <span>Funds Added (Bank Receipts):</span>
-                <span className="font-medium">+{formatCurrency(summary.fundsAdded)}</span>
+                <span>Funds Added (Bank Receipts - Debit):</span>
+                <span className="font-medium">{formatCurrency(summary.categories.fundsAdded.credit - summary.categories.fundsAdded.debit)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Funds Withdrawn (Bank Payments):</span>
-                <span className="font-medium">-{formatCurrency(summary.fundsWithdrawn)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Fees & Charges (Book Voucher):</span>
-                <span className="font-medium">-{formatCurrency(summary.feesAndCharges)}</span>
+                <span>Funds Withdrawn (Bank Payments - Credit):</span>
+                <span className="font-medium">-{formatCurrency(summary.categories.fundsWithdrawn.credit - summary.categories.fundsWithdrawn.debit)}</span>
               </div>
               <div className="flex justify-between border-t border-purple-300 mt-2 pt-2 font-bold">
                 <span>Actual Invested Value:</span>
-                <span className="text-purple-900">{formatCurrency(summary.investedValue)}</span>
+                <span className="text-purple-900">{formatCurrency((summary.categories.fundsAdded.credit - summary.categories.fundsAdded.debit)- (summary.categories.fundsWithdrawn.debit - summary.categories.fundsWithdrawn.credit))}</span>
+              </div>
+              <div className="text-xs text-purple-600 mt-2 italic">
+                Formula: Bank Receipts (Debit) - Bank Payments (Credit)
               </div>
             </div>
           </div>

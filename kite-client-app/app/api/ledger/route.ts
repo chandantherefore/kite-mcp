@@ -60,11 +60,11 @@ export async function GET(request: NextRequest) {
           totalCredit: 0,
           netCashFlow: 0,
           categories: {
-            feesAndCharges: 0,      // Book Voucher
-            fundsAdded: 0,          // Bank Receipts
-            internalAdjustment: 0,  // Journal Entry
-            fundsWithdrawn: 0,      // Bank Payments
-            dematMovement: 0,       // Delivery Voucher
+            feesAndCharges: { debit: 0, credit: 0 },      // Book Voucher
+            fundsAdded: { debit: 0, credit: 0 },          // Bank Receipts
+            internalAdjustment: { debit: 0, credit: 0 },  // Journal Entry
+            fundsWithdrawn: { debit: 0, credit: 0 },      // Bank Payments
+            dematMovement: { debit: 0, credit: 0 },       // Delivery Voucher
           },
           entries: [],
         });
@@ -79,27 +79,32 @@ export async function GET(request: NextRequest) {
       group.totalDebit += debit;
       group.totalCredit += credit;
 
-      // Categorize by voucher type
+      // Categorize by voucher type - track debit and credit separately
       const voucherType = (entry.voucher_type || '').toLowerCase();
 
       if (voucherType.includes('book')) {
-        group.categories.feesAndCharges += debit + credit;
+        group.categories.feesAndCharges.debit += debit;
+        group.categories.feesAndCharges.credit += credit;
       } else if (voucherType.includes('bank receipt')) {
-        group.categories.fundsAdded += debit;
+        group.categories.fundsAdded.debit += debit;
+        group.categories.fundsAdded.credit += credit;
       } else if (voucherType.includes('journal')) {
-        group.categories.internalAdjustment += Math.abs(debit - credit);
+        group.categories.internalAdjustment.debit += debit;
+        group.categories.internalAdjustment.credit += credit;
       } else if (voucherType.includes('bank payment')) {
-        group.categories.fundsWithdrawn += credit;
+        group.categories.fundsWithdrawn.debit += debit;
+        group.categories.fundsWithdrawn.credit += credit;
       } else if (voucherType.includes('delivery')) {
-        group.categories.dematMovement += debit + credit;
+        group.categories.dematMovement.debit += debit;
+        group.categories.dematMovement.credit += credit;
       }
     }
 
     // Calculate net cash flow and invested value for each account
     for (const group of accountGroups.values()) {
       group.netCashFlow = group.totalCredit - group.totalDebit;
-      // Invested Value = Funds Added - Funds Withdrawn - Fees
-      group.investedValue = group.categories.fundsAdded - group.categories.fundsWithdrawn - group.categories.feesAndCharges;
+      // Invested Value = Funds Added (Bank Receipts Debit) - Funds Withdrawn (Bank Payments Credit)
+      group.investedValue = group.categories.fundsAdded.debit - group.categories.fundsWithdrawn.credit;
     }
 
     const data = Array.from(accountGroups.values());
