@@ -22,7 +22,7 @@ login(client_id="chandan")
 generate_session(client_id="chandan", request_token="...")
 ```
 
-This saves the credentials to `~/.kite-mcp-credentials.json`.
+This saves the credentials to `~/.oneapp-credentials.json`.
 
 ### 2. Link Database Accounts to Kite Accounts
 
@@ -51,7 +51,7 @@ UPDATE accounts SET broker_id = 'father' WHERE id = 2;
 **Cause**: No authenticated Kite session available, or the session has expired.
 
 **Solution**:
-1. Check if credentials exist: `cat ~/.kite-mcp-credentials.json`
+1. Check if credentials exist: `cat ~/.oneapp-credentials.json`
 2. Verify the session is valid (access tokens expire daily)
 3. Re-authenticate using the login flow
 4. Ensure the `broker_id` in your database matches the authenticated `client_id`

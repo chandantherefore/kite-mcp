@@ -76,21 +76,21 @@ echo ""
 
 # Check Node modules
 echo "5. Checking Node.js dependencies..."
-if [ -d "kite-client-app/node_modules" ]; then
+if [ -d "equity/node_modules" ]; then
     echo "   ✅ node_modules exists"
     
     # Check for key dependencies
-    if [ -d "kite-client-app/node_modules/mysql2" ] && \
-       [ -d "kite-client-app/node_modules/csv-parse" ] && \
-       [ -d "kite-client-app/node_modules/xirr" ]; then
+    if [ -d "equity/node_modules/mysql2" ] && \
+       [ -d "equity/node_modules/csv-parse" ] && \
+       [ -d "equity/node_modules/xirr" ]; then
         echo "   ✅ All required packages installed (mysql2, csv-parse, xirr)"
     else
         echo "   ⚠️  Some packages may be missing. Installing..."
-        ddev exec "cd kite-client-app && npm install"
+        ddev exec "cd equity && npm install"
     fi
 else
     echo "   ⚠️  node_modules not found. Installing dependencies..."
-    ddev exec "cd kite-client-app && npm install"
+    ddev exec "cd equity && npm install"
 fi
 echo ""
 

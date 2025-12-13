@@ -1,8 +1,8 @@
 # Environment Variables
 
-## Portfolio Manager (kite-client-app)
+## Portfolio Manager (equity)
 
-Create a `.env.local` file in the `kite-client-app` directory.
+Create a `.env.local` file in the `equity` directory.
 
 ### Database Configuration
 | Variable | Description | Default |

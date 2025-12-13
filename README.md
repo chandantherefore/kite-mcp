@@ -62,7 +62,7 @@ open https://oneapp.ddev.site
 
 ```bash
 git clone <repository-url>
-cd kite-mcp
+cd oneapp
 ```
 
 2. Install dependencies:
@@ -100,7 +100,7 @@ Add the following to your Claude Desktop configuration file:
   "mcpServers": {
     "kite": {
       "command": "node",
-      "args": ["/absolute/path/to/kite-mcp/dist/index.js"]
+      "args": ["/absolute/path/to/oneapp/dist/index.js"]
     }
   }
 }
@@ -111,7 +111,7 @@ Add the following to your Claude Desktop configuration file:
 Configure your MCP client to run:
 
 ```bash
-node /path/to/kite-mcp/dist/index.js
+node /path/to/oneapp/dist/index.js
 ```
 
 ## Usage
@@ -242,12 +242,21 @@ npm run dev
 ### Project Structure
 
 ```
-kite-mcp/
-├── src/
-│   └── index.ts          # Main MCP server implementation
-├── dist/                 # Compiled JavaScript (generated)
-├── package.json
-├── tsconfig.json
+oneapp/                   # Root project directory
+├── equity/               # Next.js portfolio management app
+│   ├── app/              # Next.js app directory
+│   ├── lib/              # Library files
+│   ├── components/       # React components
+│   └── package.json      # Next.js app dependencies
+├── src/                  # MCP server source code
+│   ├── index.ts          # Main MCP server implementation
+│   └── config.ts         # Configuration helpers
+├── dist/                 # Compiled JavaScript (generated, gitignored)
+├── .ddev/                # DDEV configuration
+├── docs/                 # Documentation
+├── documentation/        # Additional documentation
+├── package.json          # MCP server dependencies
+├── tsconfig.json         # TypeScript configuration
 └── README.md
 ```
 

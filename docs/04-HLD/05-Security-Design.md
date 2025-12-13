@@ -2,7 +2,7 @@
 
 ## 1. Credential Storage
 -   **Pattern**: Local File System Protection.
--   **Implementation**: Credentials (`api_key`, `access_token`) are stored in `~/.kite-mcp-credentials.json` (User's Home Directory).
+-   **Implementation**: Credentials (`api_key`, `access_token`) are stored in `~/.oneapp-credentials.json` (User's Home Directory).
 -   **Access Control**: Relies on OS-level file permissions. Only the user running the process can read this file.
 
 ## 2. Environment Variables

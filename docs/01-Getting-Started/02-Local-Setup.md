@@ -24,7 +24,7 @@ Before running the project, ensure you have the following installed:
 
 ```bash
 git clone <repository-url>
-cd kite-mcp
+cd oneapp
 ```
 
 ### 2. Setup MCP Server (Root Directory)
@@ -37,10 +37,10 @@ npm install
 npm run build
 ```
 
-### 3. Setup Portfolio Manager (kite-client-app)
+### 3. Setup Portfolio Manager (equity)
 
 ```bash
-cd kite-client-app
+cd equity
 
 # Install dependencies
 npm install

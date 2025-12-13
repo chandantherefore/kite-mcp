@@ -30,7 +30,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "kite": {
       "command": "node",
-      "args": ["/absolute/path/to/kite-mcp/dist/index.js"]
+      "args": ["/absolute/path/to/oneapp/dist/index.js"]
     }
   }
 }
@@ -41,7 +41,7 @@ Add to your `claude_desktop_config.json`:
 ### Development Mode
 Run the development server with hot-reloading:
 ```bash
-# From kite-client-app/
+# From equity/
 npm run dev
 ```
 Access the app at `http://localhost:3000`.

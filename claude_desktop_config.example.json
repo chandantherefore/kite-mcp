@@ -3,7 +3,7 @@
         "kite": {
             "command": "node",
             "args": [
-                "/absolute/path/to/kite-mcp/dist/index.js"
+                "/absolute/path/to/oneapp/dist/index.js"
             ]
         }
     }

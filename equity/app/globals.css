@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827; /* gray-900 for high contrast */
+  --text-primary: #111827; /* gray-900 */
+  --text-secondary: #1f2937; /* gray-800 */
+  --text-tertiary: #374151; /* gray-700 */
+  --text-muted: #4b5563; /* gray-600 - minimum for WCAG AA */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #f9fafb; /* gray-50 for high contrast */
+    --text-primary: #f9fafb;
+    --text-secondary: #e5e7eb; /* gray-200 */
+    --text-tertiary: #d1d5db; /* gray-300 */
+    --text-muted: #9ca3af; /* gray-400 */
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Ensure all text meets WCAG AA contrast standards */
+/* Primary text: gray-900 on white = 15.8:1 (excellent) */
+/* Secondary text: gray-800 on white = 12.6:1 (excellent) */
+/* Tertiary text: gray-700 on white = 8.9:1 (excellent) */
+/* Muted text: gray-600 on white = 5.5:1 (meets AA standard) */
+
+/* Ensure all input fields have dark, visible text */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+textarea,
+select {
+  color: #111827; /* gray-900 - dark black for maximum visibility */
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280; /* gray-500 - sufficient contrast for placeholder text */
+}

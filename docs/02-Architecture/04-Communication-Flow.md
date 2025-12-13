@@ -4,10 +4,10 @@
 
 When a user asks the AI to "Buy 10 shares of Tata Motors":
 
-1.  **Request**: AI analyzes intent and sends a JSON-RPC request to `kite-mcp-server`.
+1.  **Request**: AI analyzes intent and sends a JSON-RPC request to `oneapp-server`.
     *   Tool: `place_order`
     *   Args: `{ "tradingsymbol": "TATAMOTORS", "quantity": 10, ... }`
-2.  **Authentication Check**: The server checks `sessions` map. If empty, it tries to load tokens from `~/.kite-mcp-credentials.json`.
+2.  **Authentication Check**: The server checks `sessions` map. If empty, it tries to load tokens from `~/.oneapp-credentials.json`.
 3.  **Execution**:
     *   Server calls `kiteConnect.placeOrder()`.
     *   Kite API processes the request.

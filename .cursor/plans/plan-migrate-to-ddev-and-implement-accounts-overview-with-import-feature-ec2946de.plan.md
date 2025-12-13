@@ -1,4 +1,54 @@
-<!-- ec2946de-5e22-424f-8c19-a01c8d37fca2 242a303d-52e5-4916-8dff-2e76e8221f56 -->
+---
+name: "Plan: Migrate to DDEV and Implement Accounts Overview with Import Feature"
+overview: ""
+todos:
+  - id: afd9f64a-2953-4140-9ec1-8fba05a50292
+    content: Create/Update requirements document in docs/FR-001-accounts-overview.md
+    status: pending
+  - id: 07718152-407f-458e-aeb8-3c2d31f719df
+    content: Create/Update requirements document in docs/FR-001-accounts-overview.md
+    status: pending
+  - id: e8069838-7a07-4d94-a9df-360c78f5530e
+    content: Initialize and configure DDEV (mysql, nodejs) for 'oneapp'
+    status: pending
+  - id: c62b5522-7534-476e-8214-70275e8779d9
+    content: Install dependencies (mysql2, csv-parse, xirr) in kite-client-app
+    status: pending
+  - id: 2529eadf-8a58-4fb7-a4c1-871a04b575e7
+    content: Create DB connection and schema initialization scripts
+    status: pending
+  - id: b0f4e29d-a317-47ee-afd7-4e6f1e0712ae
+    content: Implement Account Management API (CRUD)
+    status: pending
+  - id: 9313eb58-774c-4681-b635-9a9bd294121e
+    content: Implement API routes for Tradebook and Ledger import
+    status: pending
+  - id: 3ed585bd-9908-42ee-a4d9-c6b882391617
+    content: Implement API routes for Data fetching and XIRR calculation
+    status: pending
+  - id: 27237882-ee5e-4100-a7e8-f6fd1fffd43d
+    content: Create Account Management Page (Settings)
+    status: pending
+  - id: 93a0e6fe-164f-4c98-b8e1-631b6622c40f
+    content: Create Frontend Import Page with Account Selection
+    status: pending
+  - id: 8784332b-a097-498e-962f-b92cfc507e84
+    content: Update Dashboard to show Consolidated/Individual Stats
+    status: pending
+  - id: d7b77722-6f46-4762-845f-3714a9700e6a
+    content: Update DB Schema for Last Sync and Conflicts
+    status: pending
+  - id: e2ff1787-d097-4c9d-ace7-e640ed291876
+    content: Update Import APIs to track Sync Date & Detect Conflicts
+    status: pending
+  - id: e94ad236-598e-422f-8950-270dfd8c3615
+    content: Implement Conflicts API & Frontend Page
+    status: pending
+  - id: f9cbaf0f-4a0c-4207-a6c6-bdb9effc0063
+    content: Implement Stock Split Tool (API & Frontend)
+    status: pending
+---
+
 # Plan: Migrate to DDEV and Implement Accounts Overview with Import Feature
 
 ## 1. Documentation & Project Setup
@@ -66,21 +116,3 @@
 - [ ] Test CSV import with sample data.
 - [ ] Verify data persistence in MySQL.
 - [ ] Check XIRR calculations against expected values.
-
-### To-dos
-
-- [ ] Create/Update requirements document in docs/FR-001-accounts-overview.md
-- [ ] Create/Update requirements document in docs/FR-001-accounts-overview.md
-- [ ] Initialize and configure DDEV (mysql, nodejs) for 'oneapp'
-- [ ] Install dependencies (mysql2, csv-parse, xirr) in kite-client-app
-- [ ] Create DB connection and schema initialization scripts
-- [ ] Implement Account Management API (CRUD)
-- [ ] Implement API routes for Tradebook and Ledger import
-- [ ] Implement API routes for Data fetching and XIRR calculation
-- [ ] Create Account Management Page (Settings)
-- [ ] Create Frontend Import Page with Account Selection
-- [ ] Update Dashboard to show Consolidated/Individual Stats
-- [ ] Update DB Schema for Last Sync and Conflicts
-- [ ] Update Import APIs to track Sync Date & Detect Conflicts
-- [ ] Implement Conflicts API & Frontend Page
-- [ ] Implement Stock Split Tool (API & Frontend)

@@ -7,14 +7,26 @@ FLUSH PRIVILEGES;
 
 USE oneapp;
 
--- Accounts table
+-- Accounts table (user-specific with Kite API credentials)
 CREATE TABLE IF NOT EXISTS accounts (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     broker_id VARCHAR(100),
+    api_key VARCHAR(255) NULL,
+    api_secret VARCHAR(255) NULL,
+    access_token TEXT NULL,
+    access_token_expires_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_name (name)
+    last_tradebook_sync TIMESTAMP NULL,
+    last_ledger_sync TIMESTAMP NULL,
+    tradebook_records_count INT DEFAULT 0,
+    ledger_records_count INT DEFAULT 0,
+    INDEX idx_name (name),
+    INDEX idx_user_id (user_id),
+    INDEX idx_api_key (api_key),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Trades table

@@ -1,6 +1,6 @@
 name: oneapp
 type: php
-docroot: kite-client-app
+docroot: equity
 php_version: "8.3"
 webserver_type: nginx-fpm
 xdebug_enabled: false
@@ -11,23 +11,23 @@ database:
     version: "10.11"
 use_dns_when_possible: true
 composer_version: "2"
-nodejs_version: "18"
-corepack_enable: true
 web_environment:
     - DATABASE_HOST=db
     - DATABASE_PORT=3306
     - DATABASE_NAME=oneapp
     - DATABASE_USER=db
     - DATABASE_PASSWORD=db
+nodejs_version: "18"
+corepack_enable: true
 web_extra_exposed_ports:
     - name: nodejs
       container_port: 3000
       http_port: 3002
       https_port: 3003
 web_extra_daemons:
-    - name: "nextjs"
-      command: "npm run dev"
-      directory: /var/www/html/kite-client-app
+    - name: nextjs
+      command: npm run dev
+      directory: /var/www/html/equity
 
 # Key features of DDEV's config.yaml:
 

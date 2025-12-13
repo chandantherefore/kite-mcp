@@ -11,7 +11,7 @@
     -   Market Data (Quotes, OHLC, Historical).
 -   **State**: Stateless logic, but persists authentication tokens in `~/.kite-mcp-credentials.json`.
 
-## 2. Portfolio Manager Web App (`kite-client-app`)
+## 2. Portfolio Manager Web App (`equity`)
 
 -   **Type**: Full Stack Web Application (Next.js)
 -   **Responsibility**: Visual interface for portfolio tracking and data import.
