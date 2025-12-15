@@ -3,49 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { db } from '@/lib/db';
 import { calculatePortfolioXIRR, calculateStockXIRR } from '@/lib/xirr-calculator';
-
-// Helper function to get current prices from Kite MCP
-async function getCurrentPrices(symbols: string[]): Promise<Record<string, number>> {
-  const prices: Record<string, number> = {};
-
-  if (symbols.length === 0) {
-    return prices;
-  }
-
-  try {
-    // Format symbols for Kite API (NSE:SYMBOL)
-    const instruments = symbols.map(symbol => `NSE:${symbol}`);
-
-    // Call Kite MCP get_ltp tool - need to use first available session
-    // Since this is called from server-side, we use executeKiteTool directly
-    const { executeKiteTool } = await import('@/lib/kite-service');
-
-    const result = await executeKiteTool('get_ltp', {
-      instruments: instruments
-    });
-
-    // Parse the response
-    // Result format: { "NSE:SYMBOL": { "last_price": 1234.56 } }
-    if (result && typeof result === 'object') {
-      for (const symbol of symbols) {
-        const instrumentKey = `NSE:${symbol}`;
-        if (result[instrumentKey] && result[instrumentKey].last_price) {
-          prices[symbol] = result[instrumentKey].last_price;
-        } else {
-          prices[symbol] = 0; // Default if not found
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching prices from Kite MCP:', error);
-    // Return default prices on error
-    for (const symbol of symbols) {
-      prices[symbol] = 0;
-    }
-  }
-
-  return prices;
-}
+import { getCurrentPrices as getYahooPrices } from '@/lib/yahoo-finance';
 
 // GET /api/stats?accountId=[id]
 export async function GET(request: NextRequest) {
@@ -93,9 +51,17 @@ export async function GET(request: NextRequest) {
     // Get holdings (including closed positions) - user-specific
     const holdings = await db.getHoldings(userId, accountId, true);
 
-    // Get unique symbols for price fetching
+    // Get unique symbols for price fetching (using Yahoo Finance - Free!)
     const symbols = holdings.map(h => h.symbol);
-    const currentPrices = symbols.length > 0 ? await getCurrentPrices(symbols) : {};
+    console.log(`[Stats API] Fetching prices for ${symbols.length} symbols:`, symbols);
+    const currentPrices = symbols.length > 0 ? await getYahooPrices(symbols, 'NSE') : {};
+    console.log('[Stats API] Prices received:', currentPrices);
+
+    // Log which symbols have 0 prices
+    const zeroPrices = symbols.filter(s => !currentPrices[s] || currentPrices[s] === 0);
+    if (zeroPrices.length > 0) {
+      console.warn('[Stats API] ⚠️  Symbols with 0 or missing prices:', zeroPrices);
+    }
 
     // Calculate portfolio value and enrich holdings
     let totalInvestment = 0;
@@ -125,7 +91,7 @@ export async function GET(request: NextRequest) {
 
         // Current value (for remaining holdings ONLY)
         const currentValue = currentQuantity * currentPrice;
-        
+
         // Realized P&L (from completed sales) - approximate using FIFO
         const avgBuyPrice = holding.avg_price || 0;
         const soldQuantity = trades
@@ -133,13 +99,15 @@ export async function GET(request: NextRequest) {
           .reduce((sum, t) => sum + t.quantity, 0);
         const soldCost = soldQuantity * avgBuyPrice;
         const realizedPnL = totalSellAmount - soldCost;
-        
+
         // Unrealized P&L (from current holdings)
         const unrealizedPnL = currentValue - (currentQuantity * avgBuyPrice);
-        
+
         // Total P&L = Realized + Unrealized
         const totalPnL = realizedPnL + unrealizedPnL;
-        const investment = totalBuyAmount;
+
+        // Investment = Cost basis of CURRENT holdings only (not all-time purchases)
+        const investment = currentQuantity * avgBuyPrice;
         const pnlPercent = investment > 0 ? (totalPnL / investment) * 100 : 0;
 
         totalInvestment += investment;
@@ -158,6 +126,8 @@ export async function GET(request: NextRequest) {
 
         return {
           symbol: holding.symbol,
+          accountId: holding.account_id,
+          accountName: holding.account_name || 'Unknown',
           quantity: currentQuantity,
           avgPrice: parseFloat(safeNumber(avgBuyPrice).toFixed(2)),
           currentPrice,

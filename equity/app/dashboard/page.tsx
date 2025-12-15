@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TrendingUp, Wallet, PieChart, Users, Eye, EyeOff, RefreshCw, Zap, Database } from 'lucide-react';
 import { useKiteStore } from '@/store/useKiteStore';
+import PageShortcuts from '@/components/PageShortcuts';
+import { equityLinks } from '@/lib/links';
 
 interface Account {
   id: number;
@@ -132,7 +134,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-          <header className="bg-white shadow">
+      <PageShortcuts links={equityLinks} title="Equity" />
+      <header className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
                   <h1 className="text-3xl font-bold tracking-tight text-gray-900">

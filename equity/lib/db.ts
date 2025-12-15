@@ -460,10 +460,12 @@ export const db = {
 
   // Portfolio analytics queries (user-specific via account ownership)
   async getHoldings(userId: number, accountId?: number, includeClosedPositions: boolean = false): Promise<any[]> {
+    // Always group by symbol AND account_id to show separate holdings per account
     let sql = `
       SELECT 
         t.symbol,
         t.account_id,
+        a.name as account_name,
         SUM(CASE WHEN t.trade_type = 'buy' THEN t.quantity ELSE -t.quantity END) as quantity,
         SUM(CASE WHEN t.trade_type = 'buy' THEN t.quantity * t.price ELSE 0 END) / 
           NULLIF(SUM(CASE WHEN t.trade_type = 'buy' THEN t.quantity ELSE 0 END), 0) as avg_price
@@ -478,15 +480,13 @@ export const db = {
       params.push(accountId);
     }
 
-    sql += `
-      GROUP BY t.symbol, t.account_id
-    `;
+    sql += ' GROUP BY t.symbol, t.account_id, a.name';
 
     if (!includeClosedPositions) {
       sql += ' HAVING quantity > 0';
     }
 
-    sql += ' ORDER BY t.symbol';
+    sql += ' ORDER BY t.symbol, a.name';
 
     return query(sql, params);
   },

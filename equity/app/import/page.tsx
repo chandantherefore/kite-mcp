@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PageShortcuts from '@/components/PageShortcuts';
+import { equityLinks } from '@/lib/links';
 
 interface Account {
   id: number;
@@ -134,9 +136,11 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50">
+      <PageShortcuts links={equityLinks} title="Equity" />
+      <div className="p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Import Data</h1>
           <p className="text-gray-700">Upload Tradebook and Ledger CSV files from Zerodha</p>
         </div>
@@ -322,6 +326,7 @@ export default function ImportPage() {
             <li>For accurate XIRR, upload both Tradebook and Ledger data</li>
           </ul>
         </div>
+      </div>
       </div>
     </div>
   );

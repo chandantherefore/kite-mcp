@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Filter, Wallet, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import PageShortcuts from '@/components/PageShortcuts';
+import { equityLinks } from '@/lib/links';
 
 interface Account {
   id: number;
@@ -155,9 +157,11 @@ export default function LedgerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50">
+      <PageShortcuts links={equityLinks} title="Equity" />
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Ledger</h1>
           <p className="text-gray-700">Track your cash flows, investments, and withdrawals</p>
@@ -519,6 +523,7 @@ export default function LedgerPage() {
             <p className="text-sm text-gray-700">Import your ledger CSV to see cash flow analysis</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

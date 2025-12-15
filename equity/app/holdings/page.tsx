@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useKiteStore } from '@/store/useKiteStore';
+import PageShortcuts from '@/components/PageShortcuts';
+import { equityLinks } from '@/lib/links';
 
 interface Account {
   id: number;
@@ -11,6 +13,8 @@ interface Account {
 
 interface ManualHolding {
   symbol: string;
+  accountId: number;
+  accountName: string;
   quantity: number;
   avgPrice: number;
   currentPrice: number;
@@ -30,9 +34,15 @@ interface ManualStats {
   currentValue: number;
   totalPnl: number;
   totalPnlPercent: number;
+  totalRealizedPnL: number;
+  totalUnrealizedPnL: number;
   xirr: number | null;
   holdings: ManualHolding[];
 }
+
+type SortField = 'symbol' | 'quantity' | 'avgPrice' | 'investment' | 'realizedPnL' | 'unrealizedPnL' | 'xirr';
+type SortDirection = 'asc' | 'desc' | null;
+type HoldingFilter = 'all' | 'active' | 'closed';
 
 export default function HoldingsPage() {
   // Tab state
@@ -44,6 +54,11 @@ export default function HoldingsPage() {
   const [manualStats, setManualStats] = useState<ManualStats | null>(null);
   const [manualLoading, setManualLoading] = useState(false);
   const [manualError, setManualError] = useState<string | null>(null);
+  
+  // Filtering and Sorting state
+  const [holdingFilter, setHoldingFilter] = useState<HoldingFilter>('all');
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   
   // Live Zerodha Data
   const { 
@@ -110,13 +125,121 @@ export default function HoldingsPage() {
     }
   };
 
+  // Sorting and Filtering functions
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle through: asc -> desc -> null
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortDirection(null);
+        setSortField(null);
+      }
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedAndFilteredHoldings = (holdings: ManualHolding[]) => {
+    // First, filter holdings
+    let filtered = [...holdings];
+    
+    if (holdingFilter === 'active') {
+      filtered = filtered.filter(h => h.quantity > 0);
+    } else if (holdingFilter === 'closed') {
+      filtered = filtered.filter(h => h.quantity === 0);
+    }
+    
+    // For 'all', separate active and closed
+    if (holdingFilter === 'all') {
+      const active = filtered.filter(h => h.quantity > 0);
+      const closed = filtered.filter(h => h.quantity === 0);
+      
+      // Sort each group if sorting is applied
+      if (sortField && sortDirection) {
+        sortHoldings(active, sortField, sortDirection);
+        sortHoldings(closed, sortField, sortDirection);
+      }
+      
+      // Return active first, then closed
+      return [...active, ...closed];
+    }
+    
+    // Apply sorting if specified
+    if (sortField && sortDirection) {
+      sortHoldings(filtered, sortField, sortDirection);
+    }
+    
+    return filtered;
+  };
+
+  const sortHoldings = (holdings: ManualHolding[], field: SortField, direction: SortDirection) => {
+    holdings.sort((a, b) => {
+      let aVal: number | string = 0;
+      let bVal: number | string = 0;
+      
+      switch (field) {
+        case 'symbol':
+          aVal = a.symbol.toLowerCase();
+          bVal = b.symbol.toLowerCase();
+          break;
+        case 'quantity':
+          aVal = a.quantity;
+          bVal = b.quantity;
+          break;
+        case 'avgPrice':
+          aVal = a.avgPrice;
+          bVal = b.avgPrice;
+          break;
+        case 'investment':
+          aVal = a.investment;
+          bVal = b.investment;
+          break;
+        case 'realizedPnL':
+          aVal = a.realizedPnL;
+          bVal = b.realizedPnL;
+          break;
+        case 'unrealizedPnL':
+          aVal = a.unrealizedPnL;
+          bVal = b.unrealizedPnL;
+          break;
+        case 'xirr':
+          aVal = a.xirr ?? -Infinity;
+          bVal = b.xirr ?? -Infinity;
+          break;
+      }
+      
+      if (direction === 'asc') {
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+      }
+    });
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <span className="ml-1 text-gray-400">⇅</span>;
+    }
+    if (sortDirection === 'asc') {
+      return <span className="ml-1 text-blue-600">↑</span>;
+    }
+    if (sortDirection === 'desc') {
+      return <span className="ml-1 text-blue-600">↓</span>;
+    }
+    return <span className="ml-1 text-gray-400">⇅</span>;
+  };
+
   const hasLiveData = liveData.holdings.length > 0 || liveData.mfHoldings.length > 0;
   const hasManualData = manualStats && manualStats.holdings.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50">
+      <PageShortcuts links={equityLinks} title="Equity" />
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Holdings</h1>
           <p className="text-gray-700">View your current stock holdings from both live and manual sources</p>
         </div>
@@ -360,6 +483,47 @@ export default function HoldingsPage() {
               </div>
             )}
 
+            {/* Filter Buttons */}
+            {manualStats && hasManualData && (
+              <div className="mb-6 bg-white rounded-lg shadow p-4">
+                <label className="block text-sm font-medium text-gray-800 mb-3">
+                  Filter Holdings:
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setHoldingFilter('all')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      holdingFilter === 'all'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    All ({manualStats.holdings.length})
+                  </button>
+                  <button
+                    onClick={() => setHoldingFilter('active')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      holdingFilter === 'active'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Active ({manualStats.holdings.filter(h => h.quantity > 0).length})
+                  </button>
+                  <button
+                    onClick={() => setHoldingFilter('closed')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      holdingFilter === 'closed'
+                        ? 'bg-gray-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Closed ({manualStats.holdings.filter(h => h.quantity === 0).length})
+                  </button>
+                </div>
+              </div>
+            )}
+
             {manualError && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
                 {manualError}
@@ -373,18 +537,45 @@ export default function HoldingsPage() {
             ) : manualStats && hasManualData ? (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
                     <div className="text-sm text-gray-700">Total Investment</div>
                     <div className="text-2xl font-bold text-gray-900">
                       ₹{manualStats.totalInvestment.toLocaleString('en-IN')}
                     </div>
+                    <div className="text-xs text-gray-500 mt-1">Cost basis of current holdings</div>
                   </div>
                   <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
                     <div className="text-sm text-gray-700">Current Value</div>
                     <div className="text-2xl font-bold text-gray-900">
                       ₹{manualStats.currentValue.toLocaleString('en-IN')}
                     </div>
+                    <div className="text-xs text-gray-500 mt-1">Market value of holdings</div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4 border-l-4 border-indigo-500">
+                    <div className="text-sm text-gray-700">XIRR</div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {manualStats.xirr !== null ? `${manualStats.xirr.toFixed(2)}%` : 'N/A'}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">Annualized return</div>
+                  </div>
+                </div>
+
+                {/* P&L Breakdown Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
+                    <div className="text-sm text-gray-700">Realized P&L</div>
+                    <div className={`text-2xl font-bold ${manualStats.totalRealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ₹{manualStats.totalRealizedPnL.toLocaleString('en-IN')}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">From sold positions</div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-4 border-l-4 border-teal-500">
+                    <div className="text-sm text-gray-700">Unrealized P&L</div>
+                    <div className={`text-2xl font-bold ${manualStats.totalUnrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ₹{manualStats.totalUnrealizedPnL.toLocaleString('en-IN')}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">From current holdings</div>
                   </div>
                   <div className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
                     <div className="text-sm text-gray-700">Total P&L</div>
@@ -394,12 +585,7 @@ export default function HoldingsPage() {
                         ({manualStats.totalPnlPercent.toFixed(2)}%)
                       </span>
                     </div>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-4 border-l-4 border-indigo-500">
-                    <div className="text-sm text-gray-700">XIRR</div>
-                    <div className="text-2xl font-bold text-gray-900">
-                      {manualStats.xirr !== null ? `${manualStats.xirr.toFixed(2)}%` : 'N/A'}
-                    </div>
+                    <div className="text-xs text-gray-500 mt-1">Realized + Unrealized</div>
                   </div>
                 </div>
 
@@ -415,26 +601,84 @@ export default function HoldingsPage() {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Symbol</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Avg Price</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Investment</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Realized P&L</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unrealized P&L</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total P&L</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">XIRR</th>
+                          <th 
+                            onClick={() => handleSort('symbol')}
+                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                          >
+                            <div className="flex items-center">
+                              Symbol {getSortIcon('symbol')}
+                            </div>
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th 
+                            onClick={() => handleSort('quantity')}
+                            className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                          >
+                            <div className="flex items-center justify-end">
+                              Quantity {getSortIcon('quantity')}
+                            </div>
+                          </th>
+                          <th 
+                            onClick={() => handleSort('avgPrice')}
+                            className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                          >
+                            <div className="flex items-center justify-end">
+                              Avg Price {getSortIcon('avgPrice')}
+                            </div>
+                          </th>
+                          <th 
+                            onClick={() => handleSort('investment')}
+                            className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                          >
+                            <div className="flex items-center justify-end">
+                              Invested {getSortIcon('investment')}
+                            </div>
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                            Current Price
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                            Current Value
+                          </th>
+                          <th 
+                            onClick={() => handleSort('realizedPnL')}
+                            className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                          >
+                            <div className="flex items-center justify-end">
+                              Realized P&L {getSortIcon('realizedPnL')}
+                            </div>
+                          </th>
+                          <th 
+                            onClick={() => handleSort('unrealizedPnL')}
+                            className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                          >
+                            <div className="flex items-center justify-end">
+                              Unrealized P&L {getSortIcon('unrealizedPnL')}
+                            </div>
+                          </th>
+                          <th 
+                            onClick={() => handleSort('xirr')}
+                            className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                          >
+                            <div className="flex items-center justify-end">
+                              XIRR {getSortIcon('xirr')}
+                            </div>
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {manualStats.holdings.map((holding) => {
+                        {getSortedAndFilteredHoldings(manualStats.holdings).map((holding) => {
                           const isClosed = holding.quantity === 0;
                           return (
-                            <tr key={holding.symbol} className={`hover:bg-gray-50 ${isClosed ? 'opacity-50 bg-gray-50' : ''}`}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <tr key={`${holding.symbol}-${holding.accountId}`} className={`hover:bg-gray-50 ${isClosed ? 'opacity-50 bg-gray-50' : ''}`}>
+                              <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 {holding.symbol}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {holding.accountName}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-sm">
                                 {isClosed ? (
                                   <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded">
                                     CLOSED
@@ -445,29 +689,28 @@ export default function HoldingsPage() {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-600">
                                 {holding.quantity.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-600">
                                 ₹{holding.avgPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-600">
                                 ₹{holding.investment.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                               </td>
-                              <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${holding.realizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                                ₹{holding.currentPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                                ₹{holding.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                              </td>
+                              <td className={`px-4 py-4 whitespace-nowrap text-sm text-right font-medium ${holding.realizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 ₹{holding.realizedPnL.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                               </td>
-                              <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${holding.unrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              <td className={`px-4 py-4 whitespace-nowrap text-sm text-right font-medium ${holding.unrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 ₹{holding.unrealizedPnL.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                               </td>
-                              <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${holding.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                ₹{holding.pnl.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                                <br />
-                                <span className="text-xs">
-                                  ({holding.pnlPercent.toFixed(2)}%)
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600 font-semibold">
+                              <td className="px-4 py-4 whitespace-nowrap text-sm text-right text-gray-600 font-semibold">
                                 {holding.xirr !== null ? `${holding.xirr.toFixed(2)}%` : 'N/A'}
                               </td>
                             </tr>
@@ -494,6 +737,7 @@ export default function HoldingsPage() {
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

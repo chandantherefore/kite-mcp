@@ -3,12 +3,11 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { db, execute } from "@/lib/db";
-import { MySQLAdapter } from "@/lib/nextauth-adapter";
 
 export const authOptions: NextAuthOptions = {
-  // Use database adapter for OAuth providers (Google)
-  // Note: Credentials provider uses JWT, not database sessions
-  adapter: MySQLAdapter(),
+  // Note: Cannot use database adapter with Credentials provider
+  // Credentials provider requires JWT strategy
+  // Database sessions only work with OAuth providers
   
   providers: [
     CredentialsProvider({
@@ -130,21 +129,11 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token, user }) {
-      // Handle both JWT (credentials) and database (OAuth) strategies
-      if (token) {
-        // JWT strategy - add role and id from token
+    async session({ session, token }) {
+      // Add role and id from token to session (JWT strategy)
+      if (session.user && token) {
         (session.user as any).role = token.role || "user";
         (session.user as any).id = token.id;
-      } else if (user) {
-        // Database strategy - fetch fresh user data from database
-        const dbUser = await db.findUserById(parseInt(user.id));
-        if (dbUser) {
-          (session.user as any).role = dbUser.role;
-          (session.user as any).id = dbUser.id.toString();
-          session.user.name = `${dbUser.first_name} ${dbUser.last_name}`;
-          session.user.email = dbUser.email;
-        }
       }
 
       return session;
